@@ -1,0 +1,10 @@
+/target
+save.json
+.claude/
+
+# Unused/backup assets
+assets/FilmCow Recorded SFX/
+assets/backupsprites/
+assets/bridget_sprite_backup_prealign.png
+assets/wallen_sprite_backup.png
+assets/wallen_sprite_backup_prealign.png
