@@ -64,7 +64,7 @@ struct MenuItem(usize);
 #[derive(Component)]
 struct CharacterSelectEntity;
 
-/// Identifies a character option (0=Bridget, 1=Calvin, 2=Wallen).
+/// Identifies a character option (0=Bridget, 1=Calvin).
 #[derive(Component)]
 struct CharacterSelectItem(usize);
 
@@ -259,7 +259,7 @@ struct MapSelection(usize);
 #[derive(Resource, Default)]
 struct MenuSelection(usize);
 
-/// Which character is highlighted on the character select screen (0=Bridget, 1=Calvin, 2=Wallen).
+/// Which character is highlighted on the character select screen (0=Bridget, 1=Calvin).
 #[derive(Resource, Default)]
 struct CharacterSelectIndex(usize);
 
@@ -269,7 +269,6 @@ enum SelectedCharacter {
     #[default]
     Bridget,
     Calvin,
-    Wallen,
 }
 
 #[derive(Resource, Default)]
@@ -678,7 +677,7 @@ fn spawn_character_select(
 ) {
     char_index.0 = 0;
 
-    let preview_tex: Handle<Image> = asset_server.load("bridget_sprite.png");
+    let preview_tex: Handle<Image> = asset_server.load("bridget/bridget_sprite.png");
 
     commands
         .spawn((
@@ -716,7 +715,7 @@ fn spawn_character_select(
                     },
                 ));
 
-                let characters = ["Bridget", "Calvin", "Wallen"];
+                let characters = ["Bridget", "Calvin"];
                 for (i, name) in characters.iter().enumerate() {
                     let color = if i == 0 {
                         Color::srgb(1.0, 1.0, 0.0)
@@ -749,8 +748,8 @@ fn spawn_character_select(
                 CharacterPreviewAnim {
                     frame: 0,
                     timer: Timer::from_seconds(0.18, TimerMode::Repeating),
-                    frame_w: 230.0,
-                    frame_h: 232.0,
+                    frame_w: 128.0,
+                    frame_h: 128.0,
                 },
                 Node {
                     width: Val::Px(240.0),
@@ -759,7 +758,7 @@ fn spawn_character_select(
                 },
                 ImageNode {
                     image: preview_tex,
-                    rect: Some(Rect::new(0.0, 0.0, 230.0, 232.0)),
+                    rect: Some(Rect::new(0.0, 0.0, 128.0, 128.0)),
                     color: Color::WHITE,
                     ..default()
                 },
@@ -787,7 +786,7 @@ fn character_select_input(
     if up && char_index.0 > 0 {
         char_index.0 -= 1;
     }
-    if down && char_index.0 < 2 {
+    if down && char_index.0 < 1 {
         char_index.0 += 1;
     }
 
@@ -803,26 +802,22 @@ fn character_select_input(
         }
 
         let preview_path = match char_index.0 {
-            1 => "calvin_sprite.png",
-            2 => "wallen_sprite.png",
-            _ => "bridget_sprite.png",
+            1 => "calvin/calvin_sprite.png",
+            _ => "bridget/bridget_sprite.png",
         };
         if let Ok((mut img, mut anim)) = preview_q.get_single_mut() {
             img.image = asset_server.load(preview_path);
             anim.frame = 0;
             anim.timer.reset();
-            (anim.frame_w, anim.frame_h) = match char_index.0 {
-                1 => (128.0, 128.0),  // calvin: 1024x1024, 5×5 grid, 128px cells
-                _ => (230.0, 232.0),  // bridget/wallen: 1152x928, 5×4 grid
-            };
-            img.rect = Some(Rect::new(0.0, 0.0, anim.frame_w, anim.frame_h));
+            anim.frame_w = 128.0;
+            anim.frame_h = 128.0;
+            img.rect = Some(Rect::new(0.0, 0.0, 128.0, 128.0));
         }
     }
 
     if confirm {
         *selected = match char_index.0 {
             1 => SelectedCharacter::Calvin,
-            2 => SelectedCharacter::Wallen,
             _ => SelectedCharacter::Bridget,
         };
         next_state.set(GameState::MapScreen);
@@ -1057,28 +1052,17 @@ fn spawn_level(
 
     // ── Player ────────────────────────────────────────────────────────────────
     let player_tex = match *selected_character {
-        SelectedCharacter::Bridget => asset_server.load("bridget_sprite.png"),
-        SelectedCharacter::Calvin  => asset_server.load("calvin_sprite.png"),
-        SelectedCharacter::Wallen  => asset_server.load("wallen_sprite.png"),
+        SelectedCharacter::Bridget => asset_server.load("bridget/bridget_sprite.png"),
+        SelectedCharacter::Calvin  => asset_server.load("calvin/calvin_sprite.png"),
     };
-    let player_layout = match *selected_character {
-        // Calvin: 128×128 cells, 5 cols × 5 rows — idle(0-4), run(5-9), jump(10-14), fall(15-19), celebrate(20-24)
-        SelectedCharacter::Calvin => layouts.add(TextureAtlasLayout::from_grid(
-            UVec2::new(128, 128),
-            5,
-            5,
-            None,
-            None,
-        )),
-        // Bridget/Wallen: 230×232 cells, 5 cols × 4 rows — idle(0-4), run(5-9), jump(10-14), fall(15-19)
-        _ => layouts.add(TextureAtlasLayout::from_grid(
-            UVec2::new(230, 232),
-            5,
-            4,
-            None,
-            None,
-        )),
-    };
+    // Both characters: 128×128 cells, 5 cols × 5 rows — idle(0-4), walk(5-9), jump(10-14), fall(15-19), celebrate(20-24)
+    let player_layout = layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::new(128, 128),
+        5,
+        5,
+        None,
+        None,
+    ));
 
     commands.spawn((
         GameEntity,
@@ -1094,43 +1078,23 @@ fn spawn_level(
         AnimationIndices { first: 0, last: 3 },
         AnimationTimer(Timer::from_seconds(0.6, TimerMode::Repeating)),
         AnimState::Idle,
-        match *selected_character {
-            SelectedCharacter::Calvin => PlayerAnimations {
-                idle_first: 0,
-                idle_last: 4,
-                idle_secs: 0.18,
-                walk_first: 5,
-                walk_last: 9,
-                walk_secs: 0.14,
-                run_first: 5,
-                run_last: 9,
-                run_secs: 0.09,
-                jump_first: 10,
-                jump_last: 14,
-                fall_first: 15,
-                fall_last: 19,
-                celebrate_first: 20,
-                celebrate_last: 24,
-                celebrate_secs: 0.12,
-            },
-            _ => PlayerAnimations {
-                idle_first: 0,
-                idle_last: 4,
-                idle_secs: 0.18,
-                walk_first: 5,
-                walk_last: 9,
-                walk_secs: 0.14,
-                run_first: 5,
-                run_last: 9,
-                run_secs: 0.09,
-                jump_first: 10,
-                jump_last: 14,
-                fall_first: 15,
-                fall_last: 19,
-                celebrate_first: 0,
-                celebrate_last: 4,
-                celebrate_secs: 0.12,
-            },
+        PlayerAnimations {
+            idle_first: 0,
+            idle_last: 4,
+            idle_secs: 0.18,
+            walk_first: 5,
+            walk_last: 9,
+            walk_secs: 0.14,
+            run_first: 5,
+            run_last: 9,
+            run_secs: 0.09,
+            jump_first: 10,
+            jump_last: 14,
+            fall_first: 15,
+            fall_last: 19,
+            celebrate_first: 20,
+            celebrate_last: 24,
+            celebrate_secs: 0.12,
         },
         Sprite {
             image: player_tex,
