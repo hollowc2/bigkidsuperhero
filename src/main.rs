@@ -277,6 +277,9 @@ struct MapSelection(usize);
 #[derive(Resource, Default)]
 struct MenuSelection(usize);
 
+#[derive(Resource, Default)]
+struct CelebrateTimer(Option<Timer>);
+
 /// Which character is highlighted on the character select screen (0=Bridget, 1=Calvin).
 #[derive(Resource, Default)]
 struct CharacterSelectIndex(usize);
@@ -345,6 +348,7 @@ fn main() {
         .insert_resource(CharacterSelectIndex::default())
         .insert_resource(SelectedCharacter::default())
         .insert_resource(MusicMuted::default())
+        .insert_resource(CelebrateTimer::default())
         // Camera, score UI, sounds, background music — created once
         .add_systems(Startup, (setup_persistent, setup_background).chain())
         // Menu screen
@@ -393,6 +397,7 @@ fn main() {
                 hazard_collision,
                 update_falling_platforms,
                 goal_detection,
+                celebrate_to_won,
                 camera_follow,
                 animate_sprites,
                 tick_level_timer,
@@ -1106,6 +1111,7 @@ fn spawn_level(
     mut layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut score: ResMut<Score>,
     mut level_timer: ResMut<LevelTimer>,
+    mut celebrate_timer: ResMut<CelebrateTimer>,
     existing: Query<Entity, With<GameEntity>>,
     mut cam_q: Query<&mut Transform, With<Camera2d>>,
     current_level: Res<CurrentLevel>,
@@ -1116,6 +1122,7 @@ fn spawn_level(
     }
     score.0 = 0;
     level_timer.0 = 0.0;
+    celebrate_timer.0 = None;
 
     if let Ok(mut cam_t) = cam_q.get_single_mut() {
         cam_t.translation.x = 0.0;
@@ -1923,6 +1930,10 @@ fn player_input(
         return;
     };
 
+    if *anim_state == AnimState::Celebrate {
+        return;
+    }
+
     let dt = time.delta_secs();
 
     // Tick dash timers
@@ -2231,8 +2242,11 @@ fn goal_detection(
     mut high_score: ResMut<HighScore>,
     mut levels_beaten: ResMut<LevelsBeaten>,
     current_level: Res<CurrentLevel>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut celebrate_timer: ResMut<CelebrateTimer>,
 ) {
+    if celebrate_timer.0.is_some() {
+        return;
+    }
     let Ok((pt, pc, mut anim_state, mut vel)) = player_q.get_single_mut() else {
         return;
     };
@@ -2267,7 +2281,21 @@ fn goal_detection(
             levels_beaten: levels_beaten.0,
         });
 
-        next_state.set(GameState::Won);
+        celebrate_timer.0 = Some(Timer::from_seconds(1.5, TimerMode::Once));
+    }
+}
+
+fn celebrate_to_won(
+    time: Res<Time>,
+    mut celebrate_timer: ResMut<CelebrateTimer>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if let Some(timer) = &mut celebrate_timer.0 {
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            celebrate_timer.0 = None;
+            next_state.set(GameState::Won);
+        }
     }
 }
 
