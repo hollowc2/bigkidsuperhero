@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use std::f32::consts::TAU;
 
@@ -25,6 +26,9 @@ const PARALLAX_TILE_H: f32 = 720.0;
 const DASH_SPEED: f32 = 560.0;
 const DASH_DURATION: f32 = 0.18;
 const DASH_COOLDOWN: f32 = 0.9;
+const SPRINT_DURATION: f32 = 1.0;
+const SPRINT_COOLDOWN: f32 = 1.5;
+const SPARKLE_INTERVAL: f32 = 0.05;
 
 // Map screen node world-positions (4 levels)
 const NODE_X: [f32; 4] = [-450.0, -150.0, 150.0, 450.0];
@@ -95,7 +99,9 @@ struct CharacterPreviewAnim {
 
 #[derive(Component)]
 struct Player {
-    is_sprinting: bool,
+    sprint_timer: f32,
+    sprint_cooldown: f32,
+    sparkle_timer: f32,
 }
 #[derive(Component)]
 struct Platform;
@@ -1131,7 +1137,7 @@ fn spawn_level(
 
     commands.spawn((
         GameEntity,
-        Player { is_sprinting: false },
+        Player { sprint_timer: 0.0, sprint_cooldown: 0.0, sparkle_timer: 0.0 },
         Velocity(Vec2::ZERO),
         Grounded(false),
         CoyoteFrames(0),
@@ -1926,9 +1932,51 @@ fn player_input(
     let left = keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::KeyA);
     let right = keyboard.pressed(KeyCode::ArrowRight) || keyboard.pressed(KeyCode::KeyD);
 
-    // Sprint toggle
-    if keyboard.just_pressed(KeyCode::ShiftLeft) || keyboard.just_pressed(KeyCode::ShiftRight) {
-        player.is_sprinting = !player.is_sprinting;
+    // Sprint burst: press Shift for a 1-second speed burst
+    player.sprint_cooldown = (player.sprint_cooldown - dt).max(0.0);
+    if (keyboard.just_pressed(KeyCode::ShiftLeft) || keyboard.just_pressed(KeyCode::ShiftRight))
+        && player.sprint_cooldown == 0.0
+        && player.sprint_timer == 0.0
+    {
+        player.sprint_timer = SPRINT_DURATION;
+    }
+    if player.sprint_timer > 0.0 {
+        player.sprint_timer = (player.sprint_timer - dt).max(0.0);
+        if player.sprint_timer == 0.0 {
+            player.sprint_cooldown = SPRINT_COOLDOWN;
+        }
+    }
+    let is_sprinting = player.sprint_timer > 0.0;
+
+    // Sparkle trail while sprinting
+    if is_sprinting {
+        player.sparkle_timer -= dt;
+        if player.sparkle_timer <= 0.0 {
+            player.sparkle_timer = SPARKLE_INTERVAL;
+            let mut rng = rand::rng();
+            let behind = if sprite.flip_x { 1.0 } else { -1.0 };
+            for _ in 0..2 {
+                let vx: f32 = rng.random_range(-30.0..30.0);
+                let vy: f32 = rng.random_range(30.0..90.0);
+                let sz: f32 = rng.random_range(3.0..8.0);
+                let lt: f32 = rng.random_range(0.2..0.45);
+                let ox: f32 = rng.random_range(0.0..18.0) * behind;
+                let oy: f32 = rng.random_range(-20.0..20.0);
+                let hue: f32 = rng.random_range(40.0_f32..70.0);
+                commands.spawn((
+                    Particle { lifetime: lt, max_lifetime: lt },
+                    Velocity(Vec2::new(vx, vy)),
+                    Sprite::from_color(Color::hsla(hue, 1.0, 0.65, 0.9), Vec2::splat(sz)),
+                    Transform::from_xyz(
+                        transform.translation.x + ox,
+                        transform.translation.y + oy,
+                        0.85,
+                    ),
+                ));
+            }
+        }
+    } else {
+        player.sparkle_timer = 0.0;
     }
 
     // Start a new dash (moved to KeyF to avoid conflict with Shift)
@@ -1955,7 +2003,7 @@ fn player_input(
     if dash.active > 0.0 {
         vel.0.x = dash.dir * DASH_SPEED;
     } else {
-        let speed = if player.is_sprinting { SPRINT_SPEED } else { MOVE_SPEED };
+        let speed = if is_sprinting { SPRINT_SPEED } else { MOVE_SPEED };
         vel.0.x = if left {
             -speed
         } else if right {
@@ -2001,7 +2049,7 @@ fn player_input(
     } else if !effectively_grounded && vel.0.y <= 0.0 {
         AnimState::Fall
     } else if vel.0.x != 0.0 {
-        if player.is_sprinting { AnimState::Run } else { AnimState::Walk }
+        if is_sprinting { AnimState::Run } else { AnimState::Walk }
     } else {
         AnimState::Idle
     };
