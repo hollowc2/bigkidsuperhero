@@ -56,6 +56,18 @@ struct MapCursor;
 #[derive(Component)]
 struct MapNode;
 
+/// Drives the breathing pulse animation on map orbs and the cursor halo.
+#[derive(Component)]
+struct PulseOrb {
+    phase: f32,
+    speed: f32,
+    pulse_amount: f32,
+}
+
+/// Marks the outer glow ring behind a level node orb.
+#[derive(Component)]
+struct OrbGlow;
+
 /// Identifies a menu item (0=New Game, 1=Load, 2=Exit).
 #[derive(Component)]
 struct MenuItem(usize);
@@ -349,7 +361,11 @@ fn main() {
             OnEnter(GameState::MapScreen),
             (reset_camera, cleanup_game_entities, spawn_map_screen).chain(),
         )
-        .add_systems(Update, map_input.run_if(in_state(GameState::MapScreen)))
+        .add_systems(
+            Update,
+            (map_input, animate_map_orbs, animate_map_cursor)
+                .run_if(in_state(GameState::MapScreen)),
+        )
         .add_systems(OnExit(GameState::MapScreen), cleanup_map_screen)
         // Playing
         .add_systems(
@@ -853,33 +869,54 @@ fn spawn_map_screen(
     mut commands: Commands,
     levels_beaten: Res<LevelsBeaten>,
     mut map_selection: ResMut<MapSelection>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let lb = levels_beaten.0 as usize;
-    // Start cursor on the next unbeaten level (or last level if all beaten)
     let initial = (lb + 1).min(4);
     map_selection.0 = initial;
 
-    // Dark background panel
+    // Deep night-sky background
     commands.spawn((
         MapEntity,
-        Sprite {
-            color: Color::srgb(0.04, 0.04, 0.18),
-            custom_size: Some(Vec2::new(1280.0, 720.0)),
-            ..default()
-        },
+        Mesh2d(meshes.add(Rectangle::new(1280.0, 720.0))),
+        MeshMaterial2d(materials.add(ColorMaterial::from(Color::srgb(0.03, 0.03, 0.14)))),
         Transform::from_xyz(0.0, 0.0, -0.5),
     ));
 
-    // Path line connecting all four nodes
-    commands.spawn((
-        MapEntity,
-        Sprite {
-            color: Color::srgb(0.55, 0.45, 0.25),
-            custom_size: Some(Vec2::new(980.0, 10.0)),
-            ..default()
-        },
-        Transform::from_xyz(0.0, NODE_Y, 0.1),
-    ));
+    // Background stars at fixed positions
+    const STARS: [(f32, f32); 26] = [
+        (-580.0, 280.0), (-420.0, 310.0), (-320.0, 260.0), (-200.0, 295.0),
+        (-100.0, 275.0), (50.0, 305.0),  (180.0, 265.0),  (310.0, 285.0),
+        (450.0, 270.0),  (550.0, 295.0), (-560.0, 140.0), (-380.0, 170.0),
+        (-480.0,-150.0), (-280.0,-200.0),(-100.0,-180.0), (80.0, -165.0),
+        (300.0,-195.0),  (500.0,-170.0), (560.0,  130.0), (400.0,  150.0),
+        (-150.0, 190.0), (220.0, 175.0), (-50.0, -290.0), (430.0, -280.0),
+        (-240.0,-300.0), (0.0,   315.0),
+    ];
+    for (i, (sx, sy)) in STARS.iter().enumerate() {
+        let bright = if i % 3 == 0 { 0.95 } else { 0.55 };
+        let r = if i % 5 == 0 { 3.0_f32 } else { 2.0 };
+        commands.spawn((
+            MapEntity,
+            Mesh2d(meshes.add(Circle::new(r))),
+            MeshMaterial2d(materials.add(ColorMaterial::from(Color::srgba(1.0, 1.0, 0.9, bright)))),
+            Transform::from_xyz(*sx, *sy, 0.05),
+        ));
+    }
+
+    // Dotted path connecting all four nodes
+    let dot_step = 28.0_f32;
+    let mut dot_x = NODE_X[0] + dot_step;
+    while dot_x < NODE_X[3] {
+        commands.spawn((
+            MapEntity,
+            Mesh2d(meshes.add(Circle::new(4.5))),
+            MeshMaterial2d(materials.add(ColorMaterial::from(Color::srgba(0.55, 0.45, 0.25, 0.75)))),
+            Transform::from_xyz(dot_x, NODE_Y, 0.1),
+        ));
+        dot_x += dot_step;
+    }
 
     // Title
     commands.spawn((
@@ -893,22 +930,20 @@ fn spawn_map_screen(
     // Hint
     commands.spawn((
         MapEntity,
-        Text2d::new("Left / Right to choose   Enter to play"),
+        Text2d::new("\u{2190} \u{2192} to choose   Enter to play"),
         TextFont { font_size: 24.0, ..default() },
-        TextColor(Color::srgb(0.55, 0.55, 0.55)),
+        TextColor(Color::srgb(0.5, 0.5, 0.5)),
         Transform::from_xyz(0.0, -230.0, 1.0),
     ));
 
-    // Selection cursor (white square slightly larger than nodes, behind them)
+    // Cursor halo (soft white glow circle that lerps to the selected node)
     commands.spawn((
         MapEntity,
         MapCursor,
-        Sprite {
-            color: Color::srgb(1.0, 1.0, 1.0),
-            custom_size: Some(Vec2::splat(94.0)),
-            ..default()
-        },
+        Mesh2d(meshes.add(Circle::new(54.0))),
+        MeshMaterial2d(materials.add(ColorMaterial::from(Color::srgba(1.0, 1.0, 1.0, 0.28)))),
         Transform::from_xyz(NODE_X[initial - 1], NODE_Y, 0.2),
+        PulseOrb { phase: 0.0, speed: 2.2, pulse_amount: 0.06 },
     ));
 
     // Level nodes
@@ -916,44 +951,60 @@ fn spawn_map_screen(
         let level_num = i + 1;
         let x = NODE_X[i];
 
-        let node_color = if level_num <= lb {
-            Color::srgb(1.0, 0.78, 0.0) // gold — beaten
+        let (node_color, locked) = if level_num <= lb {
+            (Color::srgb(1.0, 0.78, 0.0), false)       // gold — beaten
         } else if level_num == lb + 1 {
-            Color::srgb(0.18, 0.75, 0.18) // green — next available
+            (Color::srgb(0.18, 0.92, 0.28), false)      // bright green — available
         } else {
-            Color::srgb(0.25, 0.25, 0.28) // dark grey — locked
+            (Color::srgb(0.20, 0.20, 0.24), true)       // dim — locked
         };
 
-        // Node square
-        commands.spawn((
+        // Outer glow ring for non-locked nodes
+        if !locked {
+            let glow = if level_num <= lb {
+                Color::srgba(1.0, 0.78, 0.0, 0.16)
+            } else {
+                Color::srgba(0.18, 0.92, 0.28, 0.16)
+            };
+            commands.spawn((
+                MapEntity,
+                OrbGlow,
+                Mesh2d(meshes.add(Circle::new(58.0))),
+                MeshMaterial2d(materials.add(ColorMaterial::from(glow))),
+                Transform::from_xyz(x, NODE_Y, 0.15),
+                PulseOrb { phase: i as f32 * 1.3, speed: 1.6, pulse_amount: 0.14 },
+            ));
+        }
+
+        // Node orb
+        let mut ec = commands.spawn((
             MapEntity,
             MapNode,
-            Sprite {
-                color: node_color,
-                custom_size: Some(Vec2::splat(80.0)),
-                ..default()
-            },
+            Mesh2d(meshes.add(Circle::new(40.0))),
+            MeshMaterial2d(materials.add(ColorMaterial::from(node_color))),
             Transform::from_xyz(x, NODE_Y, 0.5),
         ));
+        if !locked {
+            ec.insert(PulseOrb { phase: i as f32 * 0.9, speed: 2.0, pulse_amount: 0.05 });
+        }
 
-        // Level number inside node
+        // Level number
         commands.spawn((
             MapEntity,
             Text2d::new(format!("{}", level_num)),
             TextFont { font_size: 38.0, ..default() },
-            TextColor(Color::WHITE),
+            TextColor(if locked { Color::srgb(0.38, 0.38, 0.38) } else { Color::WHITE }),
             Transform::from_xyz(x, NODE_Y, 1.5),
         ));
 
-        // Status label below node
+        // Status label
         let (status, status_color) = if level_num <= lb {
             ("DONE!", Color::srgb(1.0, 0.9, 0.2))
         } else if level_num == lb + 1 {
-            ("GO!", Color::srgb(0.4, 1.0, 0.4))
+            ("GO!", Color::srgb(0.35, 1.0, 0.45))
         } else {
-            ("LOCKED", Color::srgb(0.4, 0.4, 0.4))
+            ("LOCKED", Color::srgb(0.35, 0.35, 0.35))
         };
-
         commands.spawn((
             MapEntity,
             Text2d::new(status),
@@ -967,7 +1018,7 @@ fn spawn_map_screen(
             MapEntity,
             Text2d::new(format!("Level {}", level_num)),
             TextFont { font_size: 20.0, ..default() },
-            TextColor(Color::srgb(0.75, 0.75, 0.75)),
+            TextColor(Color::srgb(0.6, 0.6, 0.6)),
             Transform::from_xyz(x, NODE_Y - 85.0, 1.0),
         ));
     }
@@ -977,7 +1028,6 @@ fn map_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     levels_beaten: Res<LevelsBeaten>,
     mut map_selection: ResMut<MapSelection>,
-    mut cursor_q: Query<&mut Transform, With<MapCursor>>,
     mut next_state: ResMut<NextState<GameState>>,
     mut current_level: ResMut<CurrentLevel>,
 ) {
@@ -1003,14 +1053,29 @@ fn map_input(
         map_selection.0 += 1;
     }
 
-    // Slide the cursor sprite
-    if let Ok(mut t) = cursor_q.get_single_mut() {
-        t.translation.x = NODE_X[map_selection.0 - 1];
-    }
-
     if confirm {
         current_level.0 = map_selection.0;
         next_state.set(GameState::Playing);
+    }
+}
+
+fn animate_map_orbs(time: Res<Time>, mut q: Query<(&mut Transform, &mut PulseOrb)>) {
+    for (mut t, mut orb) in &mut q {
+        orb.phase += time.delta_secs() * orb.speed;
+        let s = 1.0 + orb.phase.sin() * orb.pulse_amount;
+        t.scale = Vec3::splat(s.max(0.01));
+    }
+}
+
+fn animate_map_cursor(
+    time: Res<Time>,
+    map_selection: Res<MapSelection>,
+    mut cursor_q: Query<&mut Transform, With<MapCursor>>,
+) {
+    let target_x = NODE_X[map_selection.0 - 1];
+    if let Ok(mut t) = cursor_q.get_single_mut() {
+        let dx = target_x - t.translation.x;
+        t.translation.x += dx * (time.delta_secs() * 14.0).min(1.0);
     }
 }
 
