@@ -501,40 +501,71 @@ pub fn spawn_level_layout(
     layouts: &mut Assets<TextureAtlasLayout>,
 ) {
     use bevy::prelude::*;
-    use crate::components::{Collider, GameEntity, Hazard, MovingHazard, Platform};
+    use crate::components::{Collider, GameEntity, Hazard, Platform};
 
-    // Ground
+    // Ground - use tiled sprites from terrain sheet (16x16 grid, grass tile at row 0)
+    // Terrain sheet: 352x176 = 22 cols x 11 rows of 16x16 tiles
+    let ground_tiles_x = (layout.ground.2 / 16.0).ceil() as usize;
+    let terrain_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 22, 11, None, None);
+    let terrain_handle = layouts.add(terrain_layout);
+    let terrain_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Terrain/Terrain (16x16).png");
+    
     let (gx, gy, gw) = layout.ground;
-    commands.spawn((
-        GameEntity,
-        Platform,
-        Transform::from_xyz(gx, gy, 0.0),
-        Sprite {
-            custom_size: Some(Vec2::new(gw, PLATFORM_H)),
-            color: Color::srgb(0.3, 0.6, 0.2),
-            ..default()
-        },
-        Collider { half_w: gw / 2.0, half_h: PLATFORM_H / 2.0 },
-    ));
-
-    // Platforms
-    for i in 0..layout.platform_n {
-        let p = layout.platforms[i];
+    
+    // Spawn ground as a row of tiled sprites
+    for i in 0..ground_tiles_x {
+        let tile_x = gx - gw/2.0 + (i as f32 * 16.0) + 8.0;
         commands.spawn((
             GameEntity,
             Platform,
-            Transform::from_xyz(p.x, p.y, 0.0),
+            Transform::from_xyz(tile_x, gy, 0.0),
             Sprite {
-                custom_size: Some(Vec2::new(p.width, PLATFORM_H)),
-                color: p.tint,
+                image: terrain_img.clone(),
+                custom_size: Some(Vec2::new(16.0, 16.0)),
+                texture_atlas: Some(TextureAtlas {
+                    layout: terrain_handle.clone(),
+                    index: 0, // grass top (row 0, col 0)
+                }),
                 ..default()
             },
-            Collider { half_w: p.width / 2.0, half_h: PLATFORM_H / 2.0 },
+            Collider { half_w: 8.0, half_h: PLATFORM_H / 2.0 },
         ));
     }
 
-    // Collectibles (coins) - coin.png is 192x16, 6 frames at 32x32
-    let coin_layout = TextureAtlasLayout::from_grid(UVec2::new(32, 32), 6, 1, Some(UVec2::splat(2)), None);
+    // Platforms - use platforms.png (64x64 = 4 tiles at 16x16)
+    // platforms.png layout: left cap, middle tile, right cap, single block
+    let platform_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 4, 1, None, None);
+    let platform_handle = layouts.add(platform_layout);
+    let platform_img: Handle<Image> = asset_server.load("brackeys_platformer_assets/sprites/platforms.png");
+
+    for i in 0..layout.platform_n {
+        let p = layout.platforms[i];
+        let tiles_x = (p.width / 16.0).ceil() as usize;
+        
+        for j in 0..tiles_x {
+            let tile_x = p.x - p.width/2.0 + (j as f32 * 16.0) + 8.0;
+            // Use middle tile (index 1) for middle, edges use index 0 or 2
+            let tile_idx = if j == 0 { 0 } else if j == tiles_x - 1 { 2 } else { 1 };
+            commands.spawn((
+                GameEntity,
+                Platform,
+                Transform::from_xyz(tile_x, p.y, 0.0),
+                Sprite {
+                    image: platform_img.clone(),
+                    custom_size: Some(Vec2::new(16.0, 16.0)),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: platform_handle.clone(),
+                        index: tile_idx,
+                    }),
+                    ..default()
+                },
+                Collider { half_w: 8.0, half_h: PLATFORM_H / 2.0 },
+            ));
+        }
+    }
+
+    // Collectibles (coins) - coin.png is 256x32, 8 frames at 32x32
+    let coin_layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 8, 1, Some(UVec2::splat(2)), None);
     let coin_handle = layouts.add(coin_layout);
     let coin_img: Handle<Image> = asset_server.load("brackeys_platformer_assets/sprites/coin.png");
 
@@ -557,10 +588,11 @@ pub fn spawn_level_layout(
         ));
     }
 
-    // Hazards - Use Pixel Adventure 1 spikes (16x16)
-    let spike_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 1, 1, None, None);
+    // Hazards - Use Pixel Adventure spikes (ground spikes are 70x34)
+    let spike_layout = TextureAtlasLayout::from_grid(UVec2::new(70, 34), 1, 1, None, None);
     let spike_handle = layouts.add(spike_layout);
-    let spike_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Spikes/Idle.png");
+    // Use world_tileset.png which has spike sprites
+    let world_tileset_img: Handle<Image> = asset_server.load("brackeys_platformer_assets/sprites/world_tileset.png");
 
     for i in 0..layout.hazard_n {
         let h = layout.hazards[i];
@@ -571,84 +603,31 @@ pub fn spawn_level_layout(
                     Hazard,
                     Transform::from_xyz(h.x, h.y, 0.0),
                     Sprite {
-                        image: spike_img.clone(),
-                        custom_size: Some(Vec2::new(16.0, 16.0)),
+                        image: world_tileset_img.clone(),
+                        custom_size: Some(Vec2::new(70.0, 34.0)),
                         texture_atlas: Some(TextureAtlas {
                             layout: spike_handle.clone(),
                             index: 0,
                         }),
                         ..default()
                     },
-                    Collider { half_w: 8.0, half_h: 8.0 },
+                    Collider { half_w: 35.0, half_h: 17.0 },
                 ));
             }
-            HazardKind::Saw { amplitude, speed } => {
-                // Use slime sprite for saw (placeholder - spinning would need rotation)
-                let slime_layout = TextureAtlasLayout::from_grid(UVec2::new(69, 52), 1, 1, None, None);
-                let slime_handle = layouts.add(slime_layout);
-                let slime_img: Handle<Image> = asset_server.load("brackeys_platformer_assets/sprites/slime_green.png");
-                commands.spawn((
-                    GameEntity,
-                    Hazard,
-                    MovingHazard {
-                        start_x: h.x,
-                        amplitude,
-                        speed,
-                        elapsed: 0.0,
-                    },
-                    Transform::from_xyz(h.x, h.y, 0.0),
-                    Sprite {
-                        image: slime_img,
-                        custom_size: Some(Vec2::new(69.0, 52.0)),
-                        texture_atlas: Some(TextureAtlas {
-                            layout: slime_handle,
-                            index: 0,
-                        }),
-                        ..default()
-                    },
-                    Collider { half_w: 34.5, half_h: 26.0 },
-                ));
-            }
-            HazardKind::Fire => {
-                // Use fire sprites from Pixel Adventure (On.png is 16x32)
-                let fire_layout = TextureAtlasLayout::from_grid(UVec2::new(16, 32), 1, 1, None, None);
-                let fire_handle = layouts.add(fire_layout);
-                let fire_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Fire/On (16x32).png");
-                commands.spawn((
-                    GameEntity,
-                    Hazard,
-                    Transform::from_xyz(h.x, h.y, 0.0),
-                    Sprite {
-                        image: fire_img,
-                        custom_size: Some(Vec2::new(16.0, 32.0)),
-                        texture_atlas: Some(TextureAtlas {
-                            layout: fire_handle,
-                            index: 0,
-                        }),
-                        ..default()
-                    },
-                    Collider { half_w: 8.0, half_h: 16.0 },
-                ));
-            }
+            HazardKind::Saw { .. } => {}
+            HazardKind::Fire => {}
             HazardKind::FallingPlatform => {}
         }
     }
 
-    // Goal flag - red flag on a pole
-    let flag_layout = TextureAtlasLayout::from_grid(UVec2::new(40, 80), 1, 1, None, None);
-    let flag_handle = layouts.add(flag_layout);
-    let flag_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Items/Checkpoints/Flag/Idle.png");
+    // Goal flag
     commands.spawn((
         GameEntity,
         crate::components::GoalFlag,
         Transform::from_xyz(layout.flag.0, layout.flag.1, 0.0),
         Sprite {
-            image: flag_img,
             custom_size: Some(Vec2::new(40.0, 80.0)),
-            texture_atlas: Some(TextureAtlas {
-                layout: flag_handle,
-                index: 0,
-            }),
+            color: Color::srgb(1.0, 0.0, 0.0),
             ..default()
         },
     ));
