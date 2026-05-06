@@ -231,7 +231,7 @@ pub fn spawn_player(
     selected_character: SelectedCharacter,
 ) {
     let player_tex = match selected_character {
-        SelectedCharacter::Bridget => asset_server.load("bridget/bridget_sprite.png"),
+        SelectedCharacter::Bridget => asset_server.load("bridget/pinkman_sprite.png"),
         SelectedCharacter::Calvin => asset_server.load("calvin/calvin_sprite.png"),
     };
     let player_layout = layouts.add(TextureAtlasLayout::from_grid(

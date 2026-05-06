@@ -15,7 +15,7 @@ pub fn spawn_character_select(
 ) {
     char_index.0 = 0;
 
-    let preview_tex: Handle<Image> = asset_server.load("bridget/bridget_sprite.png");
+    let preview_tex: Handle<Image> = asset_server.load("bridget/pinkman_sprite.png");
 
     commands
         .spawn((
@@ -141,7 +141,7 @@ pub fn character_select_input(
 
         let preview_path = match char_index.0 {
             1 => "calvin/calvin_sprite.png",
-            _ => "bridget/bridget_sprite.png",
+            _ => "bridget/pinkman_sprite.png",
         };
         if let Ok((mut img, mut anim)) = preview_q.get_single_mut() {
             img.image = asset_server.load(preview_path);

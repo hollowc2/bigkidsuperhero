@@ -501,14 +501,22 @@ pub fn spawn_level_layout(
     layouts: &mut Assets<TextureAtlasLayout>,
 ) {
     use bevy::prelude::*;
-    use crate::components::{Collider, GameEntity, Hazard, Platform};
+    use crate::components::{
+        Collider, FallingPlatform, GameEntity, Hazard, MovingHazard, MovingPlatform, Platform,
+    };
 
-    // Ground - use tiled sprites from terrain sheet (16x16 grid, grass tile at row 0)
-    // Terrain sheet: 352x176 = 22 cols x 11 rows of 16x16 tiles
+    // Pixel Adventure terrain sheet: 352x176 = 22 cols x 11 rows of 16x16 tiles.
+    // Grass platform tiles start at row 0, col 5.
     let ground_tiles_x = (layout.ground.2 / 16.0).ceil() as usize;
     let terrain_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 22, 11, None, None);
     let terrain_handle = layouts.add(terrain_layout);
     let terrain_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Terrain/Terrain (16x16).png");
+    let grass_left = 5;
+    let grass_mid = 6;
+    let grass_right = 8;
+    let yellow_left = 198;
+    let yellow_mid = 199;
+    let yellow_right = 201;
     
     let (gx, gy, gw) = layout.ground;
     
@@ -518,13 +526,19 @@ pub fn spawn_level_layout(
         commands.spawn((
             GameEntity,
             Platform,
-            Transform::from_xyz(tile_x, gy, 0.0),
+            Transform::from_xyz(tile_x, gy, 0.1),
             Sprite {
                 image: terrain_img.clone(),
                 custom_size: Some(Vec2::new(16.0, 16.0)),
                 texture_atlas: Some(TextureAtlas {
                     layout: terrain_handle.clone(),
-                    index: 0, // grass top (row 0, col 0)
+                    index: if i == 0 {
+                        grass_left
+                    } else if i == ground_tiles_x - 1 {
+                        grass_right
+                    } else {
+                        grass_mid
+                    },
                 }),
                 ..default()
             },
@@ -532,42 +546,56 @@ pub fn spawn_level_layout(
         ));
     }
 
-    // Platforms - use platforms.png (64x64 = 4 tiles at 16x16)
-    // platforms.png layout: left cap, middle tile, right cap, single block
-    let platform_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 4, 1, None, None);
-    let platform_handle = layouts.add(platform_layout);
-    let platform_img: Handle<Image> = asset_server.load("brackeys_platformer_assets/sprites/platforms.png");
-
+    // Floating platforms use the same Pixel Adventure terrain sheet so the world reads as one tileset.
     for i in 0..layout.platform_n {
         let p = layout.platforms[i];
         let tiles_x = (p.width / 16.0).ceil() as usize;
+        let is_moving = p.moving.is_some();
         
         for j in 0..tiles_x {
             let tile_x = p.x - p.width/2.0 + (j as f32 * 16.0) + 8.0;
-            // Use middle tile (index 1) for middle, edges use index 0 or 2
-            let tile_idx = if j == 0 { 0 } else if j == tiles_x - 1 { 2 } else { 1 };
-            commands.spawn((
+            let tile_idx = if is_moving {
+                if j == 0 { yellow_left } else if j == tiles_x - 1 { yellow_right } else { yellow_mid }
+            } else if j == 0 {
+                grass_left
+            } else if j == tiles_x - 1 {
+                grass_right
+            } else {
+                grass_mid
+            };
+            let entity = commands.spawn((
                 GameEntity,
                 Platform,
-                Transform::from_xyz(tile_x, p.y, 0.0),
+                Transform::from_xyz(tile_x, p.y, 0.1),
                 Sprite {
-                    image: platform_img.clone(),
+                    image: terrain_img.clone(),
                     custom_size: Some(Vec2::new(16.0, 16.0)),
                     texture_atlas: Some(TextureAtlas {
-                        layout: platform_handle.clone(),
+                        layout: terrain_handle.clone(),
                         index: tile_idx,
                     }),
                     ..default()
                 },
                 Collider { half_w: 8.0, half_h: PLATFORM_H / 2.0 },
-            ));
+            )).id();
+            if let Some(moving) = p.moving {
+                commands.entity(entity).insert(MovingPlatform {
+                    start_x: tile_x,
+                    start_y: p.y,
+                    amplitude: moving.amplitude,
+                    speed: moving.speed,
+                    horizontal: moving.horizontal,
+                    elapsed: 0.0,
+                    delta: Vec2::ZERO,
+                });
+            }
         }
     }
 
-    // Collectibles (coins) - coin.png is 256x32, 8 frames at 32x32
-    let coin_layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 8, 1, Some(UVec2::splat(2)), None);
-    let coin_handle = layouts.add(coin_layout);
-    let coin_img: Handle<Image> = asset_server.load("brackeys_platformer_assets/sprites/coin.png");
+    // Collectibles use Pixel Adventure fruit to fit the tileset.
+    let fruit_layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 17, 1, None, None);
+    let fruit_handle = layouts.add(fruit_layout);
+    let fruit_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Items/Fruits/Cherries.png");
 
     for i in 0..layout.collectible_n {
         let (cx, cy) = layout.collectibles[i];
@@ -576,10 +604,10 @@ pub fn spawn_level_layout(
             crate::components::Collectible,
             Transform::from_xyz(cx, cy, 0.0),
             Sprite {
-                image: coin_img.clone(),
+                image: fruit_img.clone(),
                 custom_size: Some(Vec2::splat(32.0)),
                 texture_atlas: Some(TextureAtlas {
-                    layout: coin_handle.clone(),
+                    layout: fruit_handle.clone(),
                     index: 0,
                 }),
                 ..default()
@@ -588,11 +616,16 @@ pub fn spawn_level_layout(
         ));
     }
 
-    // Hazards - Use Pixel Adventure spikes (ground spikes are 70x34)
-    let spike_layout = TextureAtlasLayout::from_grid(UVec2::new(70, 34), 1, 1, None, None);
+    // Pixel Adventure traps.
+    let spike_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 1, 1, None, None);
     let spike_handle = layouts.add(spike_layout);
-    // Use world_tileset.png which has spike sprites
-    let world_tileset_img: Handle<Image> = asset_server.load("brackeys_platformer_assets/sprites/world_tileset.png");
+    let spike_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Spikes/Idle.png");
+    let saw_layout = layouts.add(TextureAtlasLayout::from_grid(UVec2::new(38, 38), 8, 1, None, None));
+    let saw_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Saw/On (38x38).png");
+    let fire_layout = layouts.add(TextureAtlasLayout::from_grid(UVec2::new(16, 32), 3, 1, None, None));
+    let fire_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Fire/On (16x32).png");
+    let falling_layout = layouts.add(TextureAtlasLayout::from_grid(UVec2::new(32, 10), 4, 1, None, None));
+    let falling_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Falling Platforms/On (32x10).png");
 
     for i in 0..layout.hazard_n {
         let h = layout.hazards[i];
@@ -601,33 +634,100 @@ pub fn spawn_level_layout(
                 commands.spawn((
                     GameEntity,
                     Hazard,
-                    Transform::from_xyz(h.x, h.y, 0.0),
+                    Transform::from_xyz(h.x, h.y, 0.2),
                     Sprite {
-                        image: world_tileset_img.clone(),
-                        custom_size: Some(Vec2::new(70.0, 34.0)),
+                        image: spike_img.clone(),
+                        custom_size: Some(Vec2::new(32.0, 32.0)),
                         texture_atlas: Some(TextureAtlas {
                             layout: spike_handle.clone(),
                             index: 0,
                         }),
                         ..default()
                     },
-                    Collider { half_w: 35.0, half_h: 17.0 },
+                    Collider { half_w: 12.0, half_h: 12.0 },
                 ));
             }
-            HazardKind::Saw { .. } => {}
-            HazardKind::Fire => {}
-            HazardKind::FallingPlatform => {}
+            HazardKind::Saw { amplitude, speed } => {
+                commands.spawn((
+                    GameEntity,
+                    Hazard,
+                    MovingHazard {
+                        start_x: h.x,
+                        amplitude,
+                        speed,
+                        elapsed: 0.0,
+                    },
+                    Transform::from_xyz(h.x, h.y, 0.2),
+                    Sprite {
+                        image: saw_img.clone(),
+                        custom_size: Some(Vec2::splat(38.0)),
+                        texture_atlas: Some(TextureAtlas {
+                            layout: saw_layout.clone(),
+                            index: 0,
+                        }),
+                        ..default()
+                    },
+                    Collider { half_w: 17.0, half_h: 17.0 },
+                ));
+            }
+            HazardKind::Fire => {
+                commands.spawn((
+                    GameEntity,
+                    Hazard,
+                    Transform::from_xyz(h.x, h.y, 0.2),
+                    Sprite {
+                        image: fire_img.clone(),
+                        custom_size: Some(Vec2::new(32.0, 64.0)),
+                        texture_atlas: Some(TextureAtlas {
+                            layout: fire_layout.clone(),
+                            index: 0,
+                        }),
+                        ..default()
+                    },
+                    Collider { half_w: 12.0, half_h: 24.0 },
+                ));
+            }
+            HazardKind::FallingPlatform => {
+                commands.spawn((
+                    GameEntity,
+                    Platform,
+                    FallingPlatform {
+                        original_x: h.x,
+                        warned: false,
+                        timer: 0.6,
+                        falling: false,
+                        fall_velocity: 0.0,
+                    },
+                    Transform::from_xyz(h.x, h.y, 0.1),
+                    Sprite {
+                        image: falling_img.clone(),
+                        custom_size: Some(Vec2::new(96.0, 30.0)),
+                        texture_atlas: Some(TextureAtlas {
+                            layout: falling_layout.clone(),
+                            index: 0,
+                        }),
+                        ..default()
+                    },
+                    Collider { half_w: 48.0, half_h: 15.0 },
+                ));
+            }
         }
     }
 
-    // Goal flag
+    // Goal checkpoint from Pixel Adventure.
+    let goal_layout = layouts.add(TextureAtlasLayout::from_grid(UVec2::splat(64), 1, 1, None, None));
+    let goal_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Items/Checkpoints/End/End (Idle).png");
     commands.spawn((
         GameEntity,
         crate::components::GoalFlag,
-        Transform::from_xyz(layout.flag.0, layout.flag.1, 0.0),
+        Transform::from_xyz(layout.flag.0, layout.flag.1, 0.2),
         Sprite {
-            custom_size: Some(Vec2::new(40.0, 80.0)),
-            color: Color::srgb(1.0, 0.0, 0.0),
+            image: goal_img,
+            custom_size: Some(Vec2::new(64.0, 64.0)),
+            texture_atlas: Some(TextureAtlas {
+                layout: goal_layout,
+                index: 0,
+            }),
             ..default()
         },
     ));
