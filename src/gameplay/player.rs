@@ -254,21 +254,8 @@ pub fn spawn_player(
         None,
     ));
 
-    commands.spawn((
-        crate::components::GameEntity,
-        Player { sprint_timer: 0.0, sprint_cooldown: 0.0, sparkle_timer: 0.0 },
-        Velocity(Vec2::ZERO),
-        Grounded(false),
-        CoyoteFrames(0),
-        DashState::default(),
-        crate::components::Collider {
-            half_w: PLAYER_HALF_W,
-            half_h: PLAYER_HALF_H,
-        },
-        AnimationIndices { first: 0, last: 3 },
-        AnimationTimer(Timer::from_seconds(0.28, TimerMode::Repeating)),
-        AnimState::Idle,
-        PlayerAnimations {
+    let player_animations = match selected_character {
+        SelectedCharacter::Bridget => PlayerAnimations {
             idle_first: 0,
             idle_last: 3,
             idle_secs: 0.28,
@@ -286,6 +273,41 @@ pub fn spawn_player(
             celebrate_last: 24,
             celebrate_secs: 0.14,
         },
+        SelectedCharacter::Calvin => PlayerAnimations {
+            idle_first: 0,
+            idle_last: 3,
+            idle_secs: 0.28,
+            walk_first: 5,
+            walk_last: 9,
+            walk_secs: 0.16,
+            run_first: 5,
+            run_last: 9,
+            run_secs: 0.08,
+            jump_first: 10,
+            jump_last: 14,
+            fall_first: 15,
+            fall_last: 19,
+            celebrate_first: 22,
+            celebrate_last: 22,
+            celebrate_secs: 0.14,
+        },
+    };
+
+    commands.spawn((
+        crate::components::GameEntity,
+        Player { sprint_timer: 0.0, sprint_cooldown: 0.0, sparkle_timer: 0.0 },
+        Velocity(Vec2::ZERO),
+        Grounded(false),
+        CoyoteFrames(0),
+        DashState::default(),
+        crate::components::Collider {
+            half_w: PLAYER_HALF_W,
+            half_h: PLAYER_HALF_H,
+        },
+        AnimationIndices { first: 0, last: 3 },
+        AnimationTimer(Timer::from_seconds(0.28, TimerMode::Repeating)),
+        AnimState::Idle,
+        player_animations,
         Sprite {
             image: player_tex,
             texture_atlas: Some(TextureAtlas {
