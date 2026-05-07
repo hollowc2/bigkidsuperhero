@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 
 use crate::components::{
-    BackgroundMusic, MuteButton, MuteButtonLabel, MusicMuted, SoundAssets,
+    BackgroundMusic, MuteButton, MuteButtonLabel, MuteButtonSlash, MusicMuted, SoundAssets,
 };
 
 /// Setup audio: load sounds, start background music, create mute button.
@@ -48,10 +48,74 @@ pub fn setup_audio(
         .with_children(|p| {
             p.spawn((
                 MuteButtonLabel,
-                Text::new("♪"),
-                TextFont { font_size: 26.0, ..default() },
-                TextColor(Color::WHITE),
-            ));
+                Node {
+                    position_type: PositionType::Relative,
+                    width: Val::Px(30.0),
+                    height: Val::Px(26.0),
+                    ..default()
+                },
+            ))
+            .with_children(|icon| {
+                icon.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(4.0),
+                        top: Val::Px(10.0),
+                        width: Val::Px(7.0),
+                        height: Val::Px(8.0),
+                        ..default()
+                    },
+                    BackgroundColor(Color::WHITE),
+                ));
+                icon.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(11.0),
+                        top: Val::Px(7.0),
+                        width: Val::Px(7.0),
+                        height: Val::Px(14.0),
+                        ..default()
+                    },
+                    BackgroundColor(Color::WHITE),
+                ));
+                icon.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(22.0),
+                        top: Val::Px(8.0),
+                        width: Val::Px(3.0),
+                        height: Val::Px(12.0),
+                        ..default()
+                    },
+                    BackgroundColor(Color::WHITE),
+                    BorderRadius::all(Val::Px(2.0)),
+                ));
+                icon.spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(27.0),
+                        top: Val::Px(5.0),
+                        width: Val::Px(3.0),
+                        height: Val::Px(18.0),
+                        ..default()
+                    },
+                    BackgroundColor(Color::WHITE),
+                    BorderRadius::all(Val::Px(2.0)),
+                ));
+                icon.spawn((
+                    MuteButtonSlash,
+                    Node {
+                        position_type: PositionType::Absolute,
+                        left: Val::Px(10.0),
+                        top: Val::Px(-10.0),
+                        ..default()
+                    },
+                    Text::new("/"),
+                    TextFont { font_size: 38.0, ..default() },
+                    TextColor(Color::srgb(1.0, 0.25, 0.2)),
+                    Visibility::Hidden,
+                ));
+            });
         });
 }
 
@@ -60,7 +124,7 @@ pub fn setup_audio(
 pub fn mute_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     interaction_q: Query<&Interaction, (Changed<Interaction>, With<MuteButton>)>,
-    mut label_q: Query<&mut Text, With<MuteButtonLabel>>,
+    mut slash_q: Query<&mut Visibility, With<MuteButtonSlash>>,
     mut muted: ResMut<MusicMuted>,
     music_q: Query<&AudioSink, With<BackgroundMusic>>,
 ) {
@@ -72,8 +136,12 @@ pub fn mute_system(
         for sink in &music_q {
             sink.set_volume(if muted.0 { 0.0 } else { 0.4 });
         }
-        for mut text in &mut label_q {
-            text.0 = if muted.0 { "✕".to_string() } else { "♪".to_string() };
+        for mut visibility in &mut slash_q {
+            *visibility = if muted.0 {
+                Visibility::Visible
+            } else {
+                Visibility::Hidden
+            };
         }
     }
 }

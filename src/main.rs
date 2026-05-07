@@ -20,7 +20,7 @@ use components::{
     BackgroundMusic, CelebrateTimer, Collider, CurrentLevel, GameEntity, GameState,
     Grounded, HighScore, LevelsBeaten, LevelTimer, MapSelection, MenuSelection,
     MusicMuted, Score, ScoreText, SelectedCharacter, CharacterSelectIndex,
-    MuteButton, MuteButtonLabel, MovingPlatform, Platform, Velocity, aabb_overlap,
+    MuteButton, MuteButtonSlash, MovingPlatform, Platform, Velocity, aabb_overlap,
     Hazard, SoundAssets,
 };
 use gameplay::camera::camera_follow;
@@ -410,7 +410,7 @@ fn escape_to_map(
 fn mute_system(
     keyboard: Res<ButtonInput<KeyCode>>,
     interaction_q: Query<&Interaction, (Changed<Interaction>, With<MuteButton>)>,
-    mut label_q: Query<&mut Text, With<MuteButtonLabel>>,
+    mut slash_q: Query<&mut Visibility, With<MuteButtonSlash>>,
     mut muted: ResMut<MusicMuted>,
     music_q: Query<&AudioSink, With<BackgroundMusic>>,
 ) {
@@ -422,9 +422,12 @@ fn mute_system(
         for sink in &music_q {
             sink.set_volume(if muted.0 { 0.0 } else { 0.4 });
         }
-        for mut text in &mut label_q {
-            text.0 = if muted.0 { "✕".to_string() } else { "♪".to_string() };
+        for mut visibility in &mut slash_q {
+            *visibility = if muted.0 {
+                Visibility::Visible
+            } else {
+                Visibility::Hidden
+            };
         }
     }
 }
-

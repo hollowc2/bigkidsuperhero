@@ -76,7 +76,7 @@ pub fn spawn_map_screen(
     // Hint
     commands.spawn((
         MapEntity,
-        Text2d::new("\u{2190} \u{2192} to choose   Enter to play"),
+        Text2d::new("Left / Right to choose   Enter to play"),
         TextFont { font_size: 24.0, ..default() },
         TextColor(Color::srgb(0.5, 0.5, 0.5)),
         Transform::from_xyz(0.0, -230.0, 1.0),

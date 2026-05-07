@@ -17,3 +17,7 @@ pub struct MuteButton;
 /// Mute button label text entity.
 #[derive(Component)]
 pub struct MuteButtonLabel;
+
+/// Slash overlay shown when the mute button is muted.
+#[derive(Component)]
+pub struct MuteButtonSlash;
