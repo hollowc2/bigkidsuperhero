@@ -7,6 +7,7 @@ use crate::components::{
     AnimState, AnimationIndices, AnimationTimer, DashState, Grounded, Player,
     PlayerAnimations, Velocity, CoyoteFrames, SelectedCharacter, SoundAssets,
 };
+use bevy::sprite::Anchor;
 use bevy::prelude::{Sprite, Transform, TextureAtlasLayout, TextureAtlas, UVec2, Timer, TimerMode, AudioPlayer, AudioSource, PlaybackSettings};
 
 const GRAVITY: f32 = -900.0;
@@ -15,6 +16,8 @@ const MOVE_SPEED: f32 = 220.0;
 const SPRINT_SPEED: f32 = 370.0;
 const PLAYER_HALF_W: f32 = 14.0;
 const PLAYER_HALF_H: f32 = 40.0;
+const PLAYER_SPRITE_SIZE: f32 = 120.0;
+const PLAYER_SPRITE_Y_OFFSET: f32 = 14.0;
 const DASH_SPEED: f32 = 560.0;
 const DASH_DURATION: f32 = 0.18;
 const DASH_COOLDOWN: f32 = 0.9;
@@ -206,8 +209,14 @@ pub fn player_input(
 }
 
 /// Apply gravity to the player.
-pub fn apply_gravity(time: Res<Time>, mut query: Query<&mut Velocity, With<Player>>) {
-    for mut vel in &mut query {
+pub fn apply_gravity(
+    time: Res<Time>,
+    mut query: Query<(&mut Velocity, &AnimState), With<Player>>,
+) {
+    for (mut vel, anim_state) in &mut query {
+        if *anim_state == AnimState::Celebrate {
+            continue;
+        }
         vel.0.y = (vel.0.y + GRAVITY * time.delta_secs()).max(-800.0);
     }
 }
@@ -215,9 +224,12 @@ pub fn apply_gravity(time: Res<Time>, mut query: Query<&mut Velocity, With<Playe
 /// Apply velocity to transform.
 pub fn apply_velocity(
     time: Res<Time>,
-    mut query: Query<(&Velocity, &mut Transform), With<Player>>,
+    mut query: Query<(&Velocity, &AnimState, &mut Transform), With<Player>>,
 ) {
-    for (vel, mut t) in &mut query {
+    for (vel, anim_state, mut t) in &mut query {
+        if *anim_state == AnimState::Celebrate {
+            continue;
+        }
         t.translation.x += vel.0.x * time.delta_secs();
         t.translation.y += vel.0.y * time.delta_secs();
     }
@@ -231,7 +243,7 @@ pub fn spawn_player(
     selected_character: SelectedCharacter,
 ) {
     let player_tex = match selected_character {
-        SelectedCharacter::Bridget => asset_server.load("bridget/pinkman_sprite.png"),
+        SelectedCharacter::Bridget => asset_server.load("bridget/bridget_cartoon_sprite.png"),
         SelectedCharacter::Calvin => asset_server.load("calvin/calvin_sprite.png"),
     };
     let player_layout = layouts.add(TextureAtlasLayout::from_grid(
@@ -254,25 +266,25 @@ pub fn spawn_player(
             half_h: PLAYER_HALF_H,
         },
         AnimationIndices { first: 0, last: 3 },
-        AnimationTimer(Timer::from_seconds(0.6, TimerMode::Repeating)),
+        AnimationTimer(Timer::from_seconds(0.28, TimerMode::Repeating)),
         AnimState::Idle,
         PlayerAnimations {
             idle_first: 0,
-            idle_last: 4,
-            idle_secs: 0.18,
+            idle_last: 3,
+            idle_secs: 0.28,
             walk_first: 5,
             walk_last: 9,
-            walk_secs: 0.14,
+            walk_secs: 0.16,
             run_first: 5,
             run_last: 9,
-            run_secs: 0.09,
+            run_secs: 0.08,
             jump_first: 10,
             jump_last: 14,
             fall_first: 15,
             fall_last: 19,
             celebrate_first: 20,
             celebrate_last: 24,
-            celebrate_secs: 0.12,
+            celebrate_secs: 0.14,
         },
         Sprite {
             image: player_tex,
@@ -280,7 +292,12 @@ pub fn spawn_player(
                 layout: player_layout,
                 index: 0,
             }),
-            custom_size: Some(Vec2::new(120.0, 120.0)),
+            custom_size: Some(Vec2::splat(PLAYER_SPRITE_SIZE)),
+            anchor: Anchor::Custom(Vec2::new(
+                0.0,
+                PLAYER_HALF_H / PLAYER_SPRITE_SIZE - 0.5
+                    + PLAYER_SPRITE_Y_OFFSET / PLAYER_SPRITE_SIZE,
+            )),
             color: Color::WHITE,
             ..default()
         },

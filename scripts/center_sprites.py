@@ -13,16 +13,17 @@ from PIL import Image
 import numpy as np
 import os
 import shutil
+from collections import deque
 
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "assets")
 ALPHA_THRESHOLD = 10
 TORSO_BAND = 0.55   # use top 55% of cell height to find body center
 
 SHEETS = [
-    # (filename,  cell_w, cell_h, cols, rows)
-    ("bridget_sprite.png", 230, 232, 5, 4),
-    ("wallen_sprite.png",  230, 232, 5, 4),
-    ("calvin_sprite.png",  239, 224, 5, 4),
+    # (filename, cell_w, cell_h, cols, rows)
+    # These are the 5x5 player sheets used by the game.
+    ("bridget/bridget_cartoon_sprite.png", 128, 128, 5, 5),
+    ("calvin/calvin_sprite.png", 128, 128, 5, 5),
 ]
 
 
@@ -36,6 +37,41 @@ def torso_cx(cell: np.ndarray, alpha_thresh: int, band: float) -> float | None:
         return None
     col_indices = np.arange(cell.shape[1], dtype=np.float32)
     return float((region.sum(axis=0) * col_indices).sum() / total)
+
+
+def remove_top_artifacts(cell: np.ndarray, alpha_thresh: int = ALPHA_THRESHOLD,
+                         max_area: int = 180, max_top: int = 8) -> bool:
+    """Remove tiny detached components near the top of a frame."""
+    alpha = cell[:, :, 3]
+    h, w = alpha.shape
+    seen = np.zeros((h, w), dtype=bool)
+    changed = False
+
+    for y in range(h):
+        for x in range(w):
+            if seen[y, x] or alpha[y, x] <= alpha_thresh:
+                continue
+
+            q = deque([(x, y)])
+            seen[y, x] = True
+            pts = []
+
+            while q:
+                cx, cy = q.popleft()
+                pts.append((cx, cy))
+                for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                    if 0 <= nx < w and 0 <= ny < h and not seen[ny, nx] and alpha[ny, nx] > alpha_thresh:
+                        seen[ny, nx] = True
+                        q.append((nx, ny))
+
+            if len(pts) <= max_area:
+                ys = [py for _, py in pts]
+                if min(ys) <= max_top:
+                    for px, py in pts:
+                        cell[py, px, :] = 0
+                    changed = True
+
+    return changed
 
 
 def center_sheet(path, cell_w, cell_h, cols, rows):
@@ -55,21 +91,26 @@ def center_sheet(path, cell_w, cell_h, cols, rows):
 
             target = cell_w / 2.0
             shift = round(target - cx)
-            if shift == 0:
-                continue
-
             shifted = np.zeros_like(cell)
             if shift > 0:
                 w = cell_w - shift
                 shifted[:, shift:shift + w] = cell[:, :w]
-            else:
+            elif shift < 0:
                 s = -shift
                 w = cell_w - s
                 shifted[:, :w] = cell[:, s:s + w]
+            else:
+                shifted[:] = cell
 
-            data[y0:y1, x0:x1] = shifted
-            changed = True
-            print(f"  [{row},{col}] torso_cx={cx:.1f} → {target:.1f}, shift={shift:+d}px")
+            artifact_removed = False
+            if row in (1, 2, 3):
+                artifact_removed = remove_top_artifacts(shifted)
+
+            if shift != 0 or artifact_removed:
+                data[y0:y1, x0:x1] = shifted
+                changed = True
+                note = " +clean" if artifact_removed else ""
+                print(f"  [{row},{col}] torso_cx={cx:.1f} → {target:.1f}, shift={shift:+d}px{note}")
 
     if not changed:
         print("  All frames already centered — no changes made.")
