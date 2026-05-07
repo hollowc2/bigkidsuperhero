@@ -14,6 +14,13 @@ pub struct MapCursor;
 #[derive(Component)]
 pub struct MapNode;
 
+/// Stores the unscrolled map position for entities that move with the level path.
+#[derive(Component)]
+pub struct MapScrollItem {
+    pub world_x: f32,
+    pub world_y: f32,
+}
+
 /// Drives the breathing pulse animation on map orbs and the cursor halo.
 #[derive(Component)]
 pub struct PulseOrb {

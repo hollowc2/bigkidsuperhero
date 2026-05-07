@@ -15,19 +15,19 @@ mod levels;
 mod screens;
 mod systems;
 
+use audio::audio::setup_audio;
 use bevy::prelude::*;
 use components::{
-    BackgroundMusic, CelebrateTimer, Collider, CurrentLevel, GameEntity, GameState,
-    Grounded, HighScore, LevelsBeaten, LevelTimer, MapSelection, MenuSelection,
-    MusicMuted, Score, ScoreText, SelectedCharacter, CharacterSelectIndex,
-    MuteButton, MuteButtonSlash, MovingPlatform, Platform, Velocity, aabb_overlap,
-    Hazard, SoundAssets,
+    BackgroundMusic, CelebrateTimer, CharacterSelectIndex, Collider, CurrentLevel, GameEntity,
+    GameState, Grounded, Hazard, HighScore, LevelTimer, LevelsBeaten, MapSelection, MenuSelection,
+    MovingPlatform, MusicMuted, MuteButton, MuteButtonSlash, Platform, Score, ScoreText,
+    SelectedCharacter, SoundAssets, Velocity, aabb_overlap,
 };
 use gameplay::camera::camera_follow;
 use gameplay::collectibles::collectible_collision;
-use gameplay::hazards::{update_moving_hazards, update_monsters};
-use gameplay::moving_platforms::{update_moving_platforms, update_falling_platforms};
-use gameplay::player::{apply_gravity, apply_velocity, player_input};
+use gameplay::hazards::{update_monsters, update_moving_hazards};
+use gameplay::moving_platforms::{update_falling_platforms, update_moving_platforms};
+use gameplay::player::{animate_celebration, apply_gravity, apply_velocity, player_input};
 use gameplay::win_condition::{celebrate_to_won, goal_detection, keep_in_bounds};
 use levels::LEVELS;
 use screens::character_select::{
@@ -35,10 +35,10 @@ use screens::character_select::{
     spawn_character_select,
 };
 use screens::map_screen::{
-    animate_map_cursor, animate_map_orbs, cleanup_map_screen, map_input, spawn_map_screen,
+    animate_map_cursor, animate_map_orbs, animate_map_scroll, cleanup_map_screen, map_input,
+    spawn_map_screen,
 };
 use screens::menu::{cleanup_menu_screen, menu_input, spawn_menu_screen};
-use audio::audio::setup_audio;
 use screens::win_screen::{cleanup_win_screen, restart_input, show_win_screen};
 use systems::animation::animate_sprites;
 use systems::particles::{parallax_scroll, update_particles};
@@ -78,24 +78,22 @@ const TIME_BONUS_PER_SEC: u32 = 10;
 const PARALLAX_TILE_W: f32 = 954.0;
 const PARALLAX_TILE_H: f32 = 720.0;
 
-// Map screen node world-positions (4 levels for now)
-#[allow(dead_code)]
-const NODE_X: [f32; 4] = [-450.0, -150.0, 150.0, 450.0];
-#[allow(dead_code)]
-const NODE_Y: f32 = 30.0;
-
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Big Kid Superhero!".into(),
-                resolution: (1280.0, 720.0).into(),
-                ..default()
-            }),
-            ..default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Big Kid Superhero!".into(),
+                        resolution: (1280.0, 720.0).into(),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .insert_resource(ClearColor(Color::srgb(0.4, 0.7, 1.0)))
         .init_state::<GameState>()
         .insert_resource(Score::default())
@@ -110,9 +108,15 @@ fn main() {
         .insert_resource(MusicMuted::default())
         .insert_resource(CelebrateTimer::default())
         // Persistent startup — load save, setup audio, camera, parallax, score UI
-        .add_systems(Startup, (load_persistent, setup_parallax_background, setup_score_ui).chain())
+        .add_systems(
+            Startup,
+            (load_persistent, setup_parallax_background, setup_score_ui).chain(),
+        )
         // Menu screen
-        .add_systems(OnEnter(GameState::MenuScreen), (reset_camera, spawn_menu_screen).chain())
+        .add_systems(
+            OnEnter(GameState::MenuScreen),
+            (reset_camera, spawn_menu_screen).chain(),
+        )
         .add_systems(Update, menu_input.run_if(in_state(GameState::MenuScreen)))
         .add_systems(OnExit(GameState::MenuScreen), cleanup_menu_screen)
         // Character select screen
@@ -130,7 +134,12 @@ fn main() {
         )
         .add_systems(
             Update,
-            (map_input, animate_map_orbs, animate_map_cursor)
+            (
+                map_input,
+                animate_map_scroll,
+                animate_map_orbs,
+                animate_map_cursor,
+            )
                 .run_if(in_state(GameState::MapScreen)),
         )
         .add_systems(OnExit(GameState::MapScreen), cleanup_map_screen)
@@ -154,6 +163,7 @@ fn main() {
                 hazard_collision,
                 update_falling_platforms,
                 goal_detection,
+                animate_celebration,
                 celebrate_to_won,
                 camera_follow,
                 animate_sprites,
@@ -197,16 +207,46 @@ fn load_persistent(
 
 fn setup_parallax_background(mut commands: Commands, asset_server: Res<AssetServer>) {
     let layers: &[(&str, f32, f32, f32)] = &[
-        ("parallax backgound pack/_11_background.png", -10.0, 1.00, 0.0),
-        ("parallax backgound pack/_10_distant_clouds.png", -9.0, 0.97, 40.0),
-        ("parallax backgound pack/_09_distant_clouds1.png", -8.0, 0.93, 20.0),
-        ("parallax backgound pack/_07_huge_clouds.png", -7.0, 0.89, 50.0),
+        (
+            "parallax backgound pack/_11_background.png",
+            -10.0,
+            1.00,
+            0.0,
+        ),
+        (
+            "parallax backgound pack/_10_distant_clouds.png",
+            -9.0,
+            0.97,
+            40.0,
+        ),
+        (
+            "parallax backgound pack/_09_distant_clouds1.png",
+            -8.0,
+            0.93,
+            20.0,
+        ),
+        (
+            "parallax backgound pack/_07_huge_clouds.png",
+            -7.0,
+            0.89,
+            50.0,
+        ),
         ("parallax backgound pack/_08_clouds.png", -6.0, 0.84, 10.0),
         ("parallax backgound pack/_06_hill2.png", -5.0, 0.72, -30.0),
         ("parallax backgound pack/_05_hill1.png", -4.0, 0.60, -40.0),
-        ("parallax backgound pack/_03_distant_trees.png", -3.0, 0.50, -50.0),
+        (
+            "parallax backgound pack/_03_distant_trees.png",
+            -3.0,
+            0.50,
+            -50.0,
+        ),
         ("parallax backgound pack/_04_bushes.png", -2.0, 0.40, -60.0),
-        ("parallax backgound pack/_02_trees and bushes.png", -1.0, 0.30, -70.0),
+        (
+            "parallax backgound pack/_02_trees and bushes.png",
+            -1.0,
+            0.30,
+            -70.0,
+        ),
     ];
 
     for &(path, z, factor, y_offset) in layers {
@@ -235,7 +275,11 @@ fn setup_parallax_background(mut commands: Commands, asset_server: Res<AssetServ
     }
 }
 
-fn setup_score_ui(mut commands: Commands, _asset_server: Res<AssetServer>, high_score: Res<HighScore>) {
+fn setup_score_ui(
+    mut commands: Commands,
+    _asset_server: Res<AssetServer>,
+    high_score: Res<HighScore>,
+) {
     // Score UI — hidden until Playing state
     commands.spawn((
         ScoreText,
@@ -243,7 +287,10 @@ fn setup_score_ui(mut commands: Commands, _asset_server: Res<AssetServer>, high_
             "Coins: 0/{}   Time: 0:00   Best: {}",
             TOTAL_COINS, high_score.0
         )),
-        TextFont { font_size: 32.0, ..default() },
+        TextFont {
+            font_size: 32.0,
+            ..default()
+        },
         TextColor(Color::WHITE),
         Node {
             position_type: PositionType::Absolute,
@@ -290,12 +337,7 @@ fn spawn_level(
 
     // Use the new level registry
     let layout = &LEVELS[current_level.0.saturating_sub(1).min(LEVELS.len() - 1)];
-    levels::spawn_level_layout(
-        &mut commands,
-        layout,
-        &asset_server,
-        &mut layouts,
-    );
+    levels::spawn_level_layout(&mut commands, layout, &asset_server, &mut layouts);
 }
 
 // ── Level Theme ──────────────────────────────────────────────────────────────
@@ -313,7 +355,10 @@ fn platform_collision(
         (&mut Transform, &mut Velocity, &mut Grounded, &Collider),
         With<components::Player>,
     >,
-    platform_q: Query<(&Transform, &Collider, Option<&MovingPlatform>), (With<Platform>, Without<components::Player>)>,
+    platform_q: Query<
+        (&Transform, &Collider, Option<&MovingPlatform>),
+        (With<Platform>, Without<components::Player>),
+    >,
 ) {
     let Ok((mut pt, mut vel, mut grounded, pc)) = player_q.get_single_mut() else {
         return;
@@ -355,7 +400,10 @@ fn platform_collision(
 fn hazard_collision(
     sounds: Res<SoundAssets>,
     mut commands: Commands,
-    mut player_q: Query<(&mut Transform, &mut Velocity, &mut Grounded, &Collider), With<components::Player>>,
+    mut player_q: Query<
+        (&mut Transform, &mut Velocity, &mut Grounded, &Collider),
+        With<components::Player>,
+    >,
     hazard_q: Query<(&Transform, &Collider), (With<Hazard>, Without<components::Player>)>,
 ) {
     let Ok((mut pt, mut vel, mut grounded, pc)) = player_q.get_single_mut() else {

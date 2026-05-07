@@ -1,4 +1,4 @@
-//! Level data structures and registry — all 7 level definitions.
+//! Level data structures and registry — all 8 level definitions.
 //!
 //! The `level_layout!` macro is defined in this module so internal helper macros
 //! (`count!`, `__platforms!`, etc.) remain in scope when the macro is invoked.
@@ -11,103 +11,640 @@ use bevy::prelude::*;
 
 /// Count comma-separated items (0–19).
 macro_rules! count {
-    () => { 0 };
-    ($a:expr) => { 1 };
-    ($a:expr, $b:expr) => { 2 };
-    ($a:expr, $b:expr, $c:expr) => { 3 };
-    ($a:expr, $b:expr, $c:expr, $d:expr) => { 4 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr) => { 5 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr) => { 6 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr) => { 7 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr) => { 8 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr) => { 9 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr) => { 10 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr) => { 11 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr) => { 12 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr) => { 13 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr) => { 14 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr) => { 15 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr, $p:expr) => { 16 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr, $p:expr, $q:expr) => { 17 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr, $p:expr, $q:expr, $r:expr) => { 18 };
-    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr, $p:expr, $q:expr, $r:expr, $s:expr) => { 19 };
+    () => {
+        0
+    };
+    ($a:expr) => {
+        1
+    };
+    ($a:expr, $b:expr) => {
+        2
+    };
+    ($a:expr, $b:expr, $c:expr) => {
+        3
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr) => {
+        4
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr) => {
+        5
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr) => {
+        6
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr) => {
+        7
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr) => {
+        8
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr) => {
+        9
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr) => {
+        10
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr) => {
+        11
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr) => {
+        12
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr) => {
+        13
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr) => {
+        14
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr) => {
+        15
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr, $p:expr) => {
+        16
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr, $p:expr, $q:expr) => {
+        17
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr, $p:expr, $q:expr, $r:expr) => {
+        18
+    };
+    ($a:expr, $b:expr, $c:expr, $d:expr, $e:expr, $f:expr, $g:expr, $h:expr, $i:expr, $j:expr, $k:expr, $l:expr, $m:expr, $n:expr, $o:expr, $p:expr, $q:expr, $r:expr, $s:expr) => {
+        19
+    };
 }
 
 /// Zero-fill value for padding.
 macro_rules! z {
-    (PlatformData) => { PlatformData { x: 0.0, y: 0.0, width: 0.0, tint: Color::NONE, moving: None } };
-    (HazardData)   => { HazardData   { x: 0.0, y: 0.0, kind: HazardKind::Spike } };
-    (MonsterData)  => { MonsterData  { x: 0.0, y: 0.0, start_x: 0.0, end_x: 0.0, speed: 0.0 } };
-    ((f32,f32))    => { (0.0_f32, 0.0_f32) };
+    (PlatformData) => {
+        PlatformData {
+            x: 0.0,
+            y: 0.0,
+            width: 0.0,
+            tint: Color::NONE,
+            moving: None,
+        }
+    };
+    (HazardData) => {
+        HazardData {
+            x: 0.0,
+            y: 0.0,
+            kind: HazardKind::Spike,
+        }
+    };
+    (MonsterData) => {
+        MonsterData {
+            x: 0.0,
+            y: 0.0,
+            start_x: 0.0,
+            end_x: 0.0,
+            speed: 0.0,
+        }
+    };
+    ((f32,f32)) => {
+        (0.0_f32, 0.0_f32)
+    };
 }
 
 macro_rules! __assign {
-    ($a:ident, $i:expr, $v:expr) => { $a[$i] = $v; };
+    ($a:ident, $i:expr, $v:expr) => {
+        $a[$i] = $v;
+    };
 }
 
 macro_rules! __platforms {
     ($a:ident, []) => {};
-    ($a:ident, [ $p0:expr $(,)? ]) => { __assign!($a, 0, $p0); };
-    ($a:ident, [ $p0:expr, $p1:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); __assign!($a, 11, $p11); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); __assign!($a, 11, $p11); __assign!($a, 12, $p12); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); __assign!($a, 11, $p11); __assign!($a, 12, $p12); __assign!($a, 13, $p13); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); __assign!($a, 11, $p11); __assign!($a, 12, $p12); __assign!($a, 13, $p13); __assign!($a, 14, $p14); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr, $p15:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); __assign!($a, 11, $p11); __assign!($a, 12, $p12); __assign!($a, 13, $p13); __assign!($a, 14, $p14); __assign!($a, 15, $p15); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr, $p15:expr, $p16:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); __assign!($a, 11, $p11); __assign!($a, 12, $p12); __assign!($a, 13, $p13); __assign!($a, 14, $p14); __assign!($a, 15, $p15); __assign!($a, 16, $p16); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr, $p15:expr, $p16:expr, $p17:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); __assign!($a, 11, $p11); __assign!($a, 12, $p12); __assign!($a, 13, $p13); __assign!($a, 14, $p14); __assign!($a, 15, $p15); __assign!($a, 16, $p16); __assign!($a, 17, $p17); };
-    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr, $p15:expr, $p16:expr, $p17:expr, $p18:expr $(,)? ]) => { __assign!($a, 0, $p0); __assign!($a, 1, $p1); __assign!($a, 2, $p2); __assign!($a, 3, $p3); __assign!($a, 4, $p4); __assign!($a, 5, $p5); __assign!($a, 6, $p6); __assign!($a, 7, $p7); __assign!($a, 8, $p8); __assign!($a, 9, $p9); __assign!($a, 10, $p10); __assign!($a, 11, $p11); __assign!($a, 12, $p12); __assign!($a, 13, $p13); __assign!($a, 14, $p14); __assign!($a, 15, $p15); __assign!($a, 16, $p16); __assign!($a, 17, $p17); __assign!($a, 18, $p18); };
+    ($a:ident, [ $p0:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+        __assign!($a, 11, $p11);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+        __assign!($a, 11, $p11);
+        __assign!($a, 12, $p12);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+        __assign!($a, 11, $p11);
+        __assign!($a, 12, $p12);
+        __assign!($a, 13, $p13);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+        __assign!($a, 11, $p11);
+        __assign!($a, 12, $p12);
+        __assign!($a, 13, $p13);
+        __assign!($a, 14, $p14);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr, $p15:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+        __assign!($a, 11, $p11);
+        __assign!($a, 12, $p12);
+        __assign!($a, 13, $p13);
+        __assign!($a, 14, $p14);
+        __assign!($a, 15, $p15);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr, $p15:expr, $p16:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+        __assign!($a, 11, $p11);
+        __assign!($a, 12, $p12);
+        __assign!($a, 13, $p13);
+        __assign!($a, 14, $p14);
+        __assign!($a, 15, $p15);
+        __assign!($a, 16, $p16);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr, $p15:expr, $p16:expr, $p17:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+        __assign!($a, 11, $p11);
+        __assign!($a, 12, $p12);
+        __assign!($a, 13, $p13);
+        __assign!($a, 14, $p14);
+        __assign!($a, 15, $p15);
+        __assign!($a, 16, $p16);
+        __assign!($a, 17, $p17);
+    };
+    ($a:ident, [ $p0:expr, $p1:expr, $p2:expr, $p3:expr, $p4:expr, $p5:expr, $p6:expr, $p7:expr, $p8:expr, $p9:expr, $p10:expr, $p11:expr, $p12:expr, $p13:expr, $p14:expr, $p15:expr, $p16:expr, $p17:expr, $p18:expr $(,)? ]) => {
+        __assign!($a, 0, $p0);
+        __assign!($a, 1, $p1);
+        __assign!($a, 2, $p2);
+        __assign!($a, 3, $p3);
+        __assign!($a, 4, $p4);
+        __assign!($a, 5, $p5);
+        __assign!($a, 6, $p6);
+        __assign!($a, 7, $p7);
+        __assign!($a, 8, $p8);
+        __assign!($a, 9, $p9);
+        __assign!($a, 10, $p10);
+        __assign!($a, 11, $p11);
+        __assign!($a, 12, $p12);
+        __assign!($a, 13, $p13);
+        __assign!($a, 14, $p14);
+        __assign!($a, 15, $p15);
+        __assign!($a, 16, $p16);
+        __assign!($a, 17, $p17);
+        __assign!($a, 18, $p18);
+    };
 }
 
 macro_rules! __collectibles {
     ($a:ident, []) => {};
-    ($a:ident, [ $c0:expr $(,)? ]) => { __assign!($a, 0, $c0); };
-    ($a:ident, [ $c0:expr, $c1:expr $(,)? ]) => { __assign!($a, 0, $c0); __assign!($a, 1, $c1); };
-    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr $(,)? ]) => { __assign!($a, 0, $c0); __assign!($a, 1, $c1); __assign!($a, 2, $c2); };
-    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr $(,)? ]) => { __assign!($a, 0, $c0); __assign!($a, 1, $c1); __assign!($a, 2, $c2); __assign!($a, 3, $c3); };
-    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr, $c4:expr $(,)? ]) => { __assign!($a, 0, $c0); __assign!($a, 1, $c1); __assign!($a, 2, $c2); __assign!($a, 3, $c3); __assign!($a, 4, $c4); };
-    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr, $c4:expr, $c5:expr $(,)? ]) => { __assign!($a, 0, $c0); __assign!($a, 1, $c1); __assign!($a, 2, $c2); __assign!($a, 3, $c3); __assign!($a, 4, $c4); __assign!($a, 5, $c5); };
-    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr, $c4:expr, $c5:expr, $c6:expr $(,)? ]) => { __assign!($a, 0, $c0); __assign!($a, 1, $c1); __assign!($a, 2, $c2); __assign!($a, 3, $c3); __assign!($a, 4, $c4); __assign!($a, 5, $c5); __assign!($a, 6, $c6); };
-    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr, $c4:expr, $c5:expr, $c6:expr, $c7:expr $(,)? ]) => { __assign!($a, 0, $c0); __assign!($a, 1, $c1); __assign!($a, 2, $c2); __assign!($a, 3, $c3); __assign!($a, 4, $c4); __assign!($a, 5, $c5); __assign!($a, 6, $c6); __assign!($a, 7, $c7); };
+    ($a:ident, [ $c0:expr $(,)? ]) => {
+        __assign!($a, 0, $c0);
+    };
+    ($a:ident, [ $c0:expr, $c1:expr $(,)? ]) => {
+        __assign!($a, 0, $c0);
+        __assign!($a, 1, $c1);
+    };
+    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr $(,)? ]) => {
+        __assign!($a, 0, $c0);
+        __assign!($a, 1, $c1);
+        __assign!($a, 2, $c2);
+    };
+    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr $(,)? ]) => {
+        __assign!($a, 0, $c0);
+        __assign!($a, 1, $c1);
+        __assign!($a, 2, $c2);
+        __assign!($a, 3, $c3);
+    };
+    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr, $c4:expr $(,)? ]) => {
+        __assign!($a, 0, $c0);
+        __assign!($a, 1, $c1);
+        __assign!($a, 2, $c2);
+        __assign!($a, 3, $c3);
+        __assign!($a, 4, $c4);
+    };
+    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr, $c4:expr, $c5:expr $(,)? ]) => {
+        __assign!($a, 0, $c0);
+        __assign!($a, 1, $c1);
+        __assign!($a, 2, $c2);
+        __assign!($a, 3, $c3);
+        __assign!($a, 4, $c4);
+        __assign!($a, 5, $c5);
+    };
+    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr, $c4:expr, $c5:expr, $c6:expr $(,)? ]) => {
+        __assign!($a, 0, $c0);
+        __assign!($a, 1, $c1);
+        __assign!($a, 2, $c2);
+        __assign!($a, 3, $c3);
+        __assign!($a, 4, $c4);
+        __assign!($a, 5, $c5);
+        __assign!($a, 6, $c6);
+    };
+    ($a:ident, [ $c0:expr, $c1:expr, $c2:expr, $c3:expr, $c4:expr, $c5:expr, $c6:expr, $c7:expr $(,)? ]) => {
+        __assign!($a, 0, $c0);
+        __assign!($a, 1, $c1);
+        __assign!($a, 2, $c2);
+        __assign!($a, 3, $c3);
+        __assign!($a, 4, $c4);
+        __assign!($a, 5, $c5);
+        __assign!($a, 6, $c6);
+        __assign!($a, 7, $c7);
+    };
 }
 
 macro_rules! __hazards {
     ($a:ident, []) => {};
-    ($a:ident, [ $h0:expr $(,)? ]) => { __assign!($a, 0, $h0); };
-    ($a:ident, [ $h0:expr, $h1:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); __assign!($a, 11, $h11); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); __assign!($a, 11, $h11); __assign!($a, 12, $h12); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); __assign!($a, 11, $h11); __assign!($a, 12, $h12); __assign!($a, 13, $h13); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); __assign!($a, 11, $h11); __assign!($a, 12, $h12); __assign!($a, 13, $h13); __assign!($a, 14, $h14); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr, $h15:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); __assign!($a, 11, $h11); __assign!($a, 12, $h12); __assign!($a, 13, $h13); __assign!($a, 14, $h14); __assign!($a, 15, $h15); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr, $h15:expr, $h16:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); __assign!($a, 11, $h11); __assign!($a, 12, $h12); __assign!($a, 13, $h13); __assign!($a, 14, $h14); __assign!($a, 15, $h15); __assign!($a, 16, $h16); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr, $h15:expr, $h16:expr, $h17:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); __assign!($a, 11, $h11); __assign!($a, 12, $h12); __assign!($a, 13, $h13); __assign!($a, 14, $h14); __assign!($a, 15, $h15); __assign!($a, 16, $h16); __assign!($a, 17, $h17); };
-    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr, $h15:expr, $h16:expr, $h17:expr, $h18:expr $(,)? ]) => { __assign!($a, 0, $h0); __assign!($a, 1, $h1); __assign!($a, 2, $h2); __assign!($a, 3, $h3); __assign!($a, 4, $h4); __assign!($a, 5, $h5); __assign!($a, 6, $h6); __assign!($a, 7, $h7); __assign!($a, 8, $h8); __assign!($a, 9, $h9); __assign!($a, 10, $h10); __assign!($a, 11, $h11); __assign!($a, 12, $h12); __assign!($a, 13, $h13); __assign!($a, 14, $h14); __assign!($a, 15, $h15); __assign!($a, 16, $h16); __assign!($a, 17, $h17); __assign!($a, 18, $h18); };
+    ($a:ident, [ $h0:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+        __assign!($a, 11, $h11);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+        __assign!($a, 11, $h11);
+        __assign!($a, 12, $h12);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+        __assign!($a, 11, $h11);
+        __assign!($a, 12, $h12);
+        __assign!($a, 13, $h13);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+        __assign!($a, 11, $h11);
+        __assign!($a, 12, $h12);
+        __assign!($a, 13, $h13);
+        __assign!($a, 14, $h14);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr, $h15:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+        __assign!($a, 11, $h11);
+        __assign!($a, 12, $h12);
+        __assign!($a, 13, $h13);
+        __assign!($a, 14, $h14);
+        __assign!($a, 15, $h15);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr, $h15:expr, $h16:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+        __assign!($a, 11, $h11);
+        __assign!($a, 12, $h12);
+        __assign!($a, 13, $h13);
+        __assign!($a, 14, $h14);
+        __assign!($a, 15, $h15);
+        __assign!($a, 16, $h16);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr, $h15:expr, $h16:expr, $h17:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+        __assign!($a, 11, $h11);
+        __assign!($a, 12, $h12);
+        __assign!($a, 13, $h13);
+        __assign!($a, 14, $h14);
+        __assign!($a, 15, $h15);
+        __assign!($a, 16, $h16);
+        __assign!($a, 17, $h17);
+    };
+    ($a:ident, [ $h0:expr, $h1:expr, $h2:expr, $h3:expr, $h4:expr, $h5:expr, $h6:expr, $h7:expr, $h8:expr, $h9:expr, $h10:expr, $h11:expr, $h12:expr, $h13:expr, $h14:expr, $h15:expr, $h16:expr, $h17:expr, $h18:expr $(,)? ]) => {
+        __assign!($a, 0, $h0);
+        __assign!($a, 1, $h1);
+        __assign!($a, 2, $h2);
+        __assign!($a, 3, $h3);
+        __assign!($a, 4, $h4);
+        __assign!($a, 5, $h5);
+        __assign!($a, 6, $h6);
+        __assign!($a, 7, $h7);
+        __assign!($a, 8, $h8);
+        __assign!($a, 9, $h9);
+        __assign!($a, 10, $h10);
+        __assign!($a, 11, $h11);
+        __assign!($a, 12, $h12);
+        __assign!($a, 13, $h13);
+        __assign!($a, 14, $h14);
+        __assign!($a, 15, $h15);
+        __assign!($a, 16, $h16);
+        __assign!($a, 17, $h17);
+        __assign!($a, 18, $h18);
+    };
 }
 
 macro_rules! __monsters {
     ($a:ident, []) => {};
-    ($a:ident, [ $m0:expr $(,)? ]) => { __assign!($a, 0, $m0); };
-    ($a:ident, [ $m0:expr, $m1:expr $(,)? ]) => { __assign!($a, 0, $m0); __assign!($a, 1, $m1); };
-    ($a:ident, [ $m0:expr, $m1:expr, $m2:expr $(,)? ]) => { __assign!($a, 0, $m0); __assign!($a, 1, $m1); __assign!($a, 2, $m2); };
+    ($a:ident, [ $m0:expr $(,)? ]) => {
+        __assign!($a, 0, $m0);
+    };
+    ($a:ident, [ $m0:expr, $m1:expr $(,)? ]) => {
+        __assign!($a, 0, $m0);
+        __assign!($a, 1, $m1);
+    };
+    ($a:ident, [ $m0:expr, $m1:expr, $m2:expr $(,)? ]) => {
+        __assign!($a, 0, $m0);
+        __assign!($a, 1, $m1);
+        __assign!($a, 2, $m2);
+    };
 }
 
 // ── level_layout! macro ──────────────────────────────────────────────────────
@@ -188,6 +725,7 @@ pub enum LevelTheme {
     FieryFurnace,
     FrigidFreezer,
     ElectricStar,
+    SkyCitadel,
     Boss,
 }
 
@@ -195,22 +733,23 @@ impl LevelTheme {
     /// Background clear color for this theme.
     pub fn clear_color(&self) -> Color {
         match self {
-            LevelTheme::Grassland     => Color::srgb(0.4, 0.7, 1.0),
+            LevelTheme::Grassland => Color::srgb(0.4, 0.7, 1.0),
             LevelTheme::RockyMountain => Color::srgb(0.55, 0.82, 1.0),
-            LevelTheme::WaterWorld   => Color::srgb(0.15, 0.35, 0.65),
+            LevelTheme::WaterWorld => Color::srgb(0.15, 0.35, 0.65),
             LevelTheme::FieryFurnace => Color::srgb(0.22, 0.06, 0.04),
             LevelTheme::FrigidFreezer => Color::srgb(0.6, 0.85, 1.0),
             LevelTheme::ElectricStar => Color::srgb(0.08, 0.04, 0.18),
-            LevelTheme::Boss         => Color::srgb(0.05, 0.0, 0.08),
+            LevelTheme::SkyCitadel => Color::srgb(0.45, 0.62, 0.82),
+            LevelTheme::Boss => Color::srgb(0.05, 0.0, 0.08),
         }
     }
 }
 
 /// Max counts per level (set to the largest level).
-pub const MAX_PLATFORMS:    usize = 19;
+pub const MAX_PLATFORMS: usize = 19;
 pub const MAX_COLLECTIBLES: usize = 8;
-pub const MAX_HAZARDS:      usize = 19;
-pub const MAX_MONSTERS:     usize = 3;
+pub const MAX_HAZARDS: usize = 19;
+pub const MAX_MONSTERS: usize = 3;
 
 /// A static or moving platform definition.
 #[allow(dead_code)]
@@ -268,17 +807,17 @@ pub struct LevelLayout {
     /// Ground platform: (center_x, center_y, width).
     pub ground: (f32, f32, f32),
     /// Platforms in the level.
-    pub platforms:    [PlatformData; MAX_PLATFORMS],
-    pub platform_n:    usize,
+    pub platforms: [PlatformData; MAX_PLATFORMS],
+    pub platform_n: usize,
     /// Collectible positions: (x, y).
-    pub collectibles:  [(f32, f32); MAX_COLLECTIBLES],
+    pub collectibles: [(f32, f32); MAX_COLLECTIBLES],
     pub collectible_n: usize,
     /// Hazards in the level.
-    pub hazards:       [HazardData; MAX_HAZARDS],
-    pub hazard_n:       usize,
+    pub hazards: [HazardData; MAX_HAZARDS],
+    pub hazard_n: usize,
     /// Monsters in the level.
-    pub monsters:      [MonsterData; MAX_MONSTERS],
-    pub monster_n:     usize,
+    pub monsters: [MonsterData; MAX_MONSTERS],
+    pub monster_n: usize,
     /// Goal flag position: (x, y).
     pub flag: (f32, f32),
     /// Right boundary for the player.
@@ -292,7 +831,7 @@ pub struct LevelLayout {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// All levels in order. Index 0 = Level 1, Index 1 = Level 2, etc.
-pub const LEVELS: [LevelLayout; 7] = [
+pub const LEVELS: [LevelLayout; 8] = [
     // ── Level 1: Grassland ─────────────────────────────────────────────────────
     level_layout!(
         ground: 640.0, -320.0, 3200.0;
@@ -323,7 +862,6 @@ pub const LEVELS: [LevelLayout; 7] = [
         bound: 1950.0;
         theme: LevelTheme::Grassland
     ),
-
     // ── Level 2: Rocky Mountain ───────────────────────────────────────────────
     level_layout!(
         ground: 900.0, -320.0, 3600.0;
@@ -356,7 +894,6 @@ pub const LEVELS: [LevelLayout; 7] = [
         bound: 2350.0;
         theme: LevelTheme::RockyMountain
     ),
-
     // ── Level 3: Water World ───────────────────────────────────────────────────
     level_layout!(
         ground: 1250.0, -320.0, 4800.0;
@@ -390,7 +927,6 @@ pub const LEVELS: [LevelLayout; 7] = [
         bound: 3050.0;
         theme: LevelTheme::WaterWorld
     ),
-
     // ── Level 4: Fiery Furnace ─────────────────────────────────────────────────
     level_layout!(
         ground: 1900.0, -320.0, 6400.0;
@@ -451,40 +987,187 @@ pub const LEVELS: [LevelLayout; 7] = [
         bound: 4000.0;
         theme: LevelTheme::FieryFurnace
     ),
-
     // ── Level 5: Frigid Freezer ────────────────────────────────────────────────
     level_layout!(
-        ground: 900.0, -320.0, 3600.0;
-        platforms: [];
-        collectibles: [];
-        hazards: [];
-        monsters: [];
-        flag: 2250.0, -278.0;
-        bound: 2350.0;
+        ground: 1550.0, -320.0, 5200.0;
+        platforms: [
+            PlatformData { x: -280.0, y: -252.0, width: 176.0, tint: Color::srgb(0.75, 0.95, 1.0), moving: None },
+            PlatformData { x: 120.0,  y: -190.0, width: 128.0, tint: Color::srgb(0.75, 0.95, 1.0), moving: None },
+            PlatformData { x: 520.0,  y: -230.0, width: 112.0, tint: Color::srgb(0.75, 0.95, 1.0), moving: None },
+            PlatformData { x: 940.0,  y: -170.0, width: 128.0, tint: Color::srgb(0.75, 0.95, 1.0), moving: None },
+            PlatformData { x: 1410.0, y: -214.0, width: 128.0, tint: Color::srgb(0.75, 0.95, 1.0), moving: None },
+            PlatformData { x: 1870.0, y: -178.0, width: 128.0, tint: Color::srgb(0.75, 0.95, 1.0), moving: None },
+            PlatformData { x: 2320.0, y: -230.0, width: 160.0, tint: Color::srgb(0.75, 0.95, 1.0), moving: None },
+            PlatformData { x: 300.0,  y: -205.0, width: 112.0, tint: Color::srgb(0.45, 0.85, 1.0), moving: Some(MovingData { amplitude: 70.0, speed: 1.4, horizontal: true }) },
+            PlatformData { x: 1150.0, y: -210.0, width: 112.0, tint: Color::srgb(0.45, 0.85, 1.0), moving: Some(MovingData { amplitude: 80.0, speed: 1.3, horizontal: false }) },
+            PlatformData { x: 2060.0, y: -205.0, width: 112.0, tint: Color::srgb(0.45, 0.85, 1.0), moving: Some(MovingData { amplitude: 86.0, speed: 1.5, horizontal: true }) },
+            PlatformData { x: 2600.0, y: -185.0, width: 112.0, tint: Color::srgb(0.45, 0.85, 1.0), moving: Some(MovingData { amplitude: 64.0, speed: 1.8, horizontal: false }) },
+        ];
+        collectibles: [
+            (-280.0, -202.0), (120.0, -140.0),
+            (520.0, -180.0), (940.0, -120.0),
+            (1150.0, -145.0), (1410.0, -164.0),
+            (2060.0, -155.0), (2600.0, -130.0),
+        ];
+        hazards: [
+            HazardData { x: -20.0,  y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 350.0,  y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 760.0,  y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 1260.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 1660.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 2160.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 2480.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 720.0,  y: -170.0, kind: HazardKind::FallingPlatform },
+            HazardData { x: 1680.0, y: -150.0, kind: HazardKind::FallingPlatform },
+            HazardData { x: 2820.0, y: -168.0, kind: HazardKind::FallingPlatform },
+        ];
+        monsters: [
+            MonsterData { x: 520.0,  y: -196.0, start_x: 468.0,  end_x: 572.0,  speed: 70.0 },
+            MonsterData { x: 2315.0, y: -196.0, start_x: 2250.0, end_x: 2390.0, speed: 82.0 },
+        ];
+        flag: 3100.0, -278.0;
+        bound: 3250.0;
         theme: LevelTheme::FrigidFreezer
     ),
-
     // ── Level 6: Electric Star ──────────────────────────────────────────────────
     level_layout!(
-        ground: 900.0, -320.0, 3600.0;
-        platforms: [];
-        collectibles: [];
-        hazards: [];
-        monsters: [];
-        flag: 2250.0, -278.0;
-        bound: 2350.0;
+        ground: 1800.0, -320.0, 6000.0;
+        platforms: [
+            PlatformData { x: -260.0, y: -245.0, width: 144.0, tint: Color::srgb(0.55, 0.35, 1.0), moving: None },
+            PlatformData { x: 250.0,  y: -198.0, width: 112.0, tint: Color::srgb(0.55, 0.35, 1.0), moving: None },
+            PlatformData { x: 760.0,  y: -165.0, width: 112.0, tint: Color::srgb(0.55, 0.35, 1.0), moving: None },
+            PlatformData { x: 1320.0, y: -198.0, width: 112.0, tint: Color::srgb(0.55, 0.35, 1.0), moving: None },
+            PlatformData { x: 1880.0, y: -168.0, width: 112.0, tint: Color::srgb(0.55, 0.35, 1.0), moving: None },
+            PlatformData { x: 2470.0, y: -210.0, width: 128.0, tint: Color::srgb(0.55, 0.35, 1.0), moving: None },
+            PlatformData { x: 3060.0, y: -176.0, width: 144.0, tint: Color::srgb(0.55, 0.35, 1.0), moving: None },
+            PlatformData { x: 520.0,  y: -205.0, width: 96.0, tint: Color::srgb(0.95, 0.9, 0.25), moving: Some(MovingData { amplitude: 105.0, speed: 2.5, horizontal: true }) },
+            PlatformData { x: 1040.0, y: -210.0, width: 96.0, tint: Color::srgb(0.95, 0.9, 0.25), moving: Some(MovingData { amplitude: 84.0, speed: 2.2, horizontal: false }) },
+            PlatformData { x: 1600.0, y: -205.0, width: 96.0, tint: Color::srgb(0.95, 0.9, 0.25), moving: Some(MovingData { amplitude: 110.0, speed: 2.7, horizontal: true }) },
+            PlatformData { x: 2200.0, y: -218.0, width: 96.0, tint: Color::srgb(0.95, 0.9, 0.25), moving: Some(MovingData { amplitude: 92.0, speed: 2.4, horizontal: false }) },
+            PlatformData { x: 2760.0, y: -205.0, width: 96.0, tint: Color::srgb(0.95, 0.9, 0.25), moving: Some(MovingData { amplitude: 100.0, speed: 2.6, horizontal: true }) },
+        ];
+        collectibles: [
+            (-260.0, -195.0), (250.0, -148.0),
+            (760.0, -115.0), (1040.0, -145.0),
+            (1320.0, -148.0), (1880.0, -118.0),
+            (2470.0, -160.0), (3060.0, -126.0),
+        ];
+        hazards: [
+            HazardData { x: 70.0,   y: -244.0, kind: HazardKind::Saw { amplitude: 70.0, speed: 4.0 } },
+            HazardData { x: 650.0,  y: -230.0, kind: HazardKind::Saw { amplitude: 80.0, speed: 4.4 } },
+            HazardData { x: 1210.0, y: -240.0, kind: HazardKind::Saw { amplitude: 70.0, speed: 4.1 } },
+            HazardData { x: 1760.0, y: -230.0, kind: HazardKind::Saw { amplitude: 82.0, speed: 4.6 } },
+            HazardData { x: 2360.0, y: -238.0, kind: HazardKind::Saw { amplitude: 75.0, speed: 4.2 } },
+            HazardData { x: 2960.0, y: -232.0, kind: HazardKind::Saw { amplitude: 70.0, speed: 4.7 } },
+            HazardData { x: 410.0,  y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 990.0,  y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 1500.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 2100.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 2660.0, y: -302.0, kind: HazardKind::Spike },
+        ];
+        monsters: [
+            MonsterData { x: 1315.0, y: -164.0, start_x: 1262.0, end_x: 1375.0, speed: 92.0 },
+        ];
+        flag: 3420.0, -278.0;
+        bound: 3550.0;
         theme: LevelTheme::ElectricStar
     ),
-
-    // ── Level 7: Boss ───────────────────────────────────────────────────────────
+    // ── Level 7: Sky Citadel ───────────────────────────────────────────────────
     level_layout!(
-        ground: 900.0, -320.0, 3600.0;
-        platforms: [];
-        collectibles: [];
-        hazards: [];
-        monsters: [];
-        flag: 2250.0, -278.0;
-        bound: 2350.0;
+        ground: 2000.0, -320.0, 6400.0;
+        platforms: [
+            PlatformData { x: -310.0, y: -245.0, width: 160.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 80.0,   y: -155.0, width: 112.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 520.0,  y: -205.0, width: 112.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 960.0,  y: -135.0, width: 112.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 1410.0, y: -205.0, width: 112.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 1860.0, y: -145.0, width: 112.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 2320.0, y: -215.0, width: 112.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 2790.0, y: -160.0, width: 128.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 3260.0, y: -218.0, width: 176.0, tint: Color::srgb(0.9, 0.92, 0.82), moving: None },
+            PlatformData { x: 300.0,  y: -190.0, width: 96.0, tint: Color::srgb(0.35, 0.95, 0.72), moving: Some(MovingData { amplitude: 90.0, speed: 1.7, horizontal: true }) },
+            PlatformData { x: 1180.0, y: -200.0, width: 96.0, tint: Color::srgb(0.35, 0.95, 0.72), moving: Some(MovingData { amplitude: 78.0, speed: 1.5, horizontal: true }) },
+            PlatformData { x: 2090.0, y: -195.0, width: 96.0, tint: Color::srgb(0.35, 0.95, 0.72), moving: Some(MovingData { amplitude: 84.0, speed: 1.8, horizontal: true }) },
+            PlatformData { x: 3020.0, y: -200.0, width: 96.0, tint: Color::srgb(0.35, 0.95, 0.72), moving: Some(MovingData { amplitude: 70.0, speed: 1.6, horizontal: false }) },
+        ];
+        collectibles: [
+            (-310.0, -195.0), (80.0, -105.0),
+            (520.0, -155.0), (960.0, -85.0),
+            (1410.0, -155.0), (1860.0, -95.0),
+            (2790.0, -110.0), (3260.0, -168.0),
+        ];
+        hazards: [
+            HazardData { x: 170.0,  y: -170.0, kind: HazardKind::FallingPlatform },
+            HazardData { x: 720.0,  y: -155.0, kind: HazardKind::FallingPlatform },
+            HazardData { x: 1600.0, y: -160.0, kind: HazardKind::FallingPlatform },
+            HazardData { x: 2540.0, y: -170.0, kind: HazardKind::FallingPlatform },
+            HazardData { x: 430.0,  y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 850.0,  y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 1280.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 1740.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 2210.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 2680.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 3130.0, y: -302.0, kind: HazardKind::Spike },
+        ];
+        monsters: [
+            MonsterData { x: 520.0,  y: -171.0, start_x: 468.0,  end_x: 574.0,  speed: 85.0 },
+            MonsterData { x: 2320.0, y: -181.0, start_x: 2268.0, end_x: 2375.0, speed: 88.0 },
+        ];
+        flag: 3640.0, -278.0;
+        bound: 3780.0;
+        theme: LevelTheme::SkyCitadel
+    ),
+    // ── Level 8: Boss ───────────────────────────────────────────────────────────
+    level_layout!(
+        ground: 2250.0, -320.0, 7200.0;
+        platforms: [
+            PlatformData { x: -320.0, y: -250.0, width: 176.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 180.0,  y: -210.0, width: 128.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 680.0,  y: -175.0, width: 128.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 1180.0, y: -220.0, width: 128.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 1700.0, y: -170.0, width: 128.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 2240.0, y: -205.0, width: 128.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 2790.0, y: -165.0, width: 128.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 3350.0, y: -225.0, width: 160.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 3920.0, y: -185.0, width: 192.0, tint: Color::srgb(0.52, 0.16, 0.72), moving: None },
+            PlatformData { x: 430.0,  y: -205.0, width: 96.0, tint: Color::srgb(1.0, 0.25, 0.72), moving: Some(MovingData { amplitude: 95.0, speed: 2.3, horizontal: true }) },
+            PlatformData { x: 940.0,  y: -205.0, width: 96.0, tint: Color::srgb(1.0, 0.25, 0.72), moving: Some(MovingData { amplitude: 86.0, speed: 2.0, horizontal: false }) },
+            PlatformData { x: 1450.0, y: -198.0, width: 96.0, tint: Color::srgb(1.0, 0.25, 0.72), moving: Some(MovingData { amplitude: 92.0, speed: 2.5, horizontal: true }) },
+            PlatformData { x: 1980.0, y: -205.0, width: 96.0, tint: Color::srgb(1.0, 0.25, 0.72), moving: Some(MovingData { amplitude: 82.0, speed: 2.1, horizontal: false }) },
+            PlatformData { x: 2520.0, y: -205.0, width: 96.0, tint: Color::srgb(1.0, 0.25, 0.72), moving: Some(MovingData { amplitude: 98.0, speed: 2.4, horizontal: true }) },
+            PlatformData { x: 3080.0, y: -205.0, width: 96.0, tint: Color::srgb(1.0, 0.25, 0.72), moving: Some(MovingData { amplitude: 88.0, speed: 2.2, horizontal: false }) },
+            PlatformData { x: 3640.0, y: -202.0, width: 96.0, tint: Color::srgb(1.0, 0.25, 0.72), moving: Some(MovingData { amplitude: 100.0, speed: 2.6, horizontal: true }) },
+        ];
+        collectibles: [
+            (-320.0, -200.0), (180.0, -160.0),
+            (680.0, -125.0), (1180.0, -170.0),
+            (1700.0, -120.0), (2240.0, -155.0),
+            (3350.0, -175.0), (3920.0, -135.0),
+        ];
+        hazards: [
+            HazardData { x: 80.0,   y: -278.0, kind: HazardKind::Fire },
+            HazardData { x: 560.0,  y: -278.0, kind: HazardKind::Fire },
+            HazardData { x: 1060.0, y: -278.0, kind: HazardKind::Fire },
+            HazardData { x: 1580.0, y: -278.0, kind: HazardKind::Fire },
+            HazardData { x: 2120.0, y: -278.0, kind: HazardKind::Fire },
+            HazardData { x: 2660.0, y: -278.0, kind: HazardKind::Fire },
+            HazardData { x: 3220.0, y: -278.0, kind: HazardKind::Fire },
+            HazardData { x: 3760.0, y: -278.0, kind: HazardKind::Fire },
+            HazardData { x: 350.0,  y: -236.0, kind: HazardKind::Saw { amplitude: 80.0, speed: 4.2 } },
+            HazardData { x: 1330.0, y: -236.0, kind: HazardKind::Saw { amplitude: 85.0, speed: 4.7 } },
+            HazardData { x: 2440.0, y: -236.0, kind: HazardKind::Saw { amplitude: 88.0, speed: 4.4 } },
+            HazardData { x: 3520.0, y: -236.0, kind: HazardKind::Saw { amplitude: 92.0, speed: 4.9 } },
+            HazardData { x: 860.0,  y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 1860.0, y: -302.0, kind: HazardKind::Spike },
+            HazardData { x: 2960.0, y: -302.0, kind: HazardKind::Spike },
+        ];
+        monsters: [
+            MonsterData { x: 680.0,  y: -141.0, start_x: 626.0,  end_x: 740.0,  speed: 105.0 },
+            MonsterData { x: 2240.0, y: -171.0, start_x: 2182.0, end_x: 2300.0, speed: 110.0 },
+            MonsterData { x: 3920.0, y: -151.0, start_x: 3840.0, end_x: 4000.0, speed: 115.0 },
+        ];
+        flag: 4260.0, -278.0;
+        bound: 4400.0;
         theme: LevelTheme::Boss
     ),
 ];
@@ -500,29 +1183,31 @@ pub fn spawn_level_layout(
     asset_server: &AssetServer,
     layouts: &mut Assets<TextureAtlasLayout>,
 ) {
-    use bevy::prelude::*;
     use crate::components::{
-        Collider, FallingPlatform, GameEntity, Hazard, MovingHazard, MovingPlatform, Platform,
+        AnimationIndices, AnimationTimer, Collider, FallingPlatform, GameEntity, Hazard, Monster,
+        MovingHazard, MovingPlatform, Platform,
     };
+    use bevy::prelude::*;
 
     // Pixel Adventure terrain sheet: 352x176 = 22 cols x 11 rows of 16x16 tiles.
     // Grass platform tiles start at row 0, col 5.
     let ground_tiles_x = (layout.ground.2 / 16.0).ceil() as usize;
     let terrain_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 22, 11, None, None);
     let terrain_handle = layouts.add(terrain_layout);
-    let terrain_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Terrain/Terrain (16x16).png");
+    let terrain_img: Handle<Image> =
+        asset_server.load("Pixel Adventure 1/Free/Terrain/Terrain (16x16).png");
     let grass_left = 5;
     let grass_mid = 6;
     let grass_right = 8;
     let yellow_left = 198;
     let yellow_mid = 199;
     let yellow_right = 201;
-    
+
     let (gx, gy, gw) = layout.ground;
-    
+
     // Spawn ground as a row of tiled sprites
     for i in 0..ground_tiles_x {
-        let tile_x = gx - gw/2.0 + (i as f32 * 16.0) + 8.0;
+        let tile_x = gx - gw / 2.0 + (i as f32 * 16.0) + 8.0;
         commands.spawn((
             GameEntity,
             Platform,
@@ -542,7 +1227,10 @@ pub fn spawn_level_layout(
                 }),
                 ..default()
             },
-            Collider { half_w: 8.0, half_h: PLATFORM_H / 2.0 },
+            Collider {
+                half_w: 8.0,
+                half_h: PLATFORM_H / 2.0,
+            },
         ));
     }
 
@@ -551,11 +1239,17 @@ pub fn spawn_level_layout(
         let p = layout.platforms[i];
         let tiles_x = (p.width / 16.0).ceil() as usize;
         let is_moving = p.moving.is_some();
-        
+
         for j in 0..tiles_x {
-            let tile_x = p.x - p.width/2.0 + (j as f32 * 16.0) + 8.0;
+            let tile_x = p.x - p.width / 2.0 + (j as f32 * 16.0) + 8.0;
             let tile_idx = if is_moving {
-                if j == 0 { yellow_left } else if j == tiles_x - 1 { yellow_right } else { yellow_mid }
+                if j == 0 {
+                    yellow_left
+                } else if j == tiles_x - 1 {
+                    yellow_right
+                } else {
+                    yellow_mid
+                }
             } else if j == 0 {
                 grass_left
             } else if j == tiles_x - 1 {
@@ -563,21 +1257,26 @@ pub fn spawn_level_layout(
             } else {
                 grass_mid
             };
-            let entity = commands.spawn((
-                GameEntity,
-                Platform,
-                Transform::from_xyz(tile_x, p.y, 0.1),
-                Sprite {
-                    image: terrain_img.clone(),
-                    custom_size: Some(Vec2::new(16.0, 16.0)),
-                    texture_atlas: Some(TextureAtlas {
-                        layout: terrain_handle.clone(),
-                        index: tile_idx,
-                    }),
-                    ..default()
-                },
-                Collider { half_w: 8.0, half_h: PLATFORM_H / 2.0 },
-            )).id();
+            let entity = commands
+                .spawn((
+                    GameEntity,
+                    Platform,
+                    Transform::from_xyz(tile_x, p.y, 0.1),
+                    Sprite {
+                        image: terrain_img.clone(),
+                        custom_size: Some(Vec2::new(16.0, 16.0)),
+                        texture_atlas: Some(TextureAtlas {
+                            layout: terrain_handle.clone(),
+                            index: tile_idx,
+                        }),
+                        ..default()
+                    },
+                    Collider {
+                        half_w: 8.0,
+                        half_h: PLATFORM_H / 2.0,
+                    },
+                ))
+                .id();
             if let Some(moving) = p.moving {
                 commands.entity(entity).insert(MovingPlatform {
                     start_x: tile_x,
@@ -592,10 +1291,10 @@ pub fn spawn_level_layout(
         }
     }
 
-    // Collectibles use Pixel Adventure fruit to fit the tileset.
-    let fruit_layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 17, 1, None, None);
-    let fruit_handle = layouts.add(fruit_layout);
-    let fruit_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Items/Fruits/Cherries.png");
+    // Collectibles use the Brackeys coin sheet.
+    let coin_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 12, 1, None, None);
+    let coin_handle = layouts.add(coin_layout);
+    let coin_img: Handle<Image> = asset_server.load("brackeys_platformer_assets/sprites/coin.png");
 
     for i in 0..layout.collectible_n {
         let (cx, cy) = layout.collectibles[i];
@@ -604,28 +1303,55 @@ pub fn spawn_level_layout(
             crate::components::Collectible,
             Transform::from_xyz(cx, cy, 0.0),
             Sprite {
-                image: fruit_img.clone(),
+                image: coin_img.clone(),
                 custom_size: Some(Vec2::splat(32.0)),
                 texture_atlas: Some(TextureAtlas {
-                    layout: fruit_handle.clone(),
+                    layout: coin_handle.clone(),
                     index: 0,
                 }),
                 ..default()
             },
-            Collider { half_w: 16.0, half_h: 16.0 },
+            Collider {
+                half_w: 14.0,
+                half_h: 14.0,
+            },
+            AnimationIndices { first: 0, last: 11 },
+            AnimationTimer(Timer::from_seconds(0.08, TimerMode::Repeating)),
         ));
     }
 
     // Pixel Adventure traps.
     let spike_layout = TextureAtlasLayout::from_grid(UVec2::splat(16), 1, 1, None, None);
     let spike_handle = layouts.add(spike_layout);
-    let spike_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Spikes/Idle.png");
-    let saw_layout = layouts.add(TextureAtlasLayout::from_grid(UVec2::new(38, 38), 8, 1, None, None));
-    let saw_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Saw/On (38x38).png");
-    let fire_layout = layouts.add(TextureAtlasLayout::from_grid(UVec2::new(16, 32), 3, 1, None, None));
-    let fire_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Fire/On (16x32).png");
-    let falling_layout = layouts.add(TextureAtlasLayout::from_grid(UVec2::new(32, 10), 4, 1, None, None));
-    let falling_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Traps/Falling Platforms/On (32x10).png");
+    let spike_img: Handle<Image> =
+        asset_server.load("Pixel Adventure 1/Free/Traps/Spikes/Idle.png");
+    let saw_layout = layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::new(38, 38),
+        8,
+        1,
+        None,
+        None,
+    ));
+    let saw_img: Handle<Image> =
+        asset_server.load("Pixel Adventure 1/Free/Traps/Saw/On (38x38).png");
+    let fire_layout = layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::new(16, 32),
+        3,
+        1,
+        None,
+        None,
+    ));
+    let fire_img: Handle<Image> =
+        asset_server.load("Pixel Adventure 1/Free/Traps/Fire/On (16x32).png");
+    let falling_layout = layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::new(32, 10),
+        4,
+        1,
+        None,
+        None,
+    ));
+    let falling_img: Handle<Image> =
+        asset_server.load("Pixel Adventure 1/Free/Traps/Falling Platforms/On (32x10).png");
 
     for i in 0..layout.hazard_n {
         let h = layout.hazards[i];
@@ -644,7 +1370,10 @@ pub fn spawn_level_layout(
                         }),
                         ..default()
                     },
-                    Collider { half_w: 12.0, half_h: 12.0 },
+                    Collider {
+                        half_w: 12.0,
+                        half_h: 12.0,
+                    },
                 ));
             }
             HazardKind::Saw { amplitude, speed } => {
@@ -667,7 +1396,10 @@ pub fn spawn_level_layout(
                         }),
                         ..default()
                     },
-                    Collider { half_w: 17.0, half_h: 17.0 },
+                    Collider {
+                        half_w: 17.0,
+                        half_h: 17.0,
+                    },
                 ));
             }
             HazardKind::Fire => {
@@ -684,7 +1416,10 @@ pub fn spawn_level_layout(
                         }),
                         ..default()
                     },
-                    Collider { half_w: 12.0, half_h: 24.0 },
+                    Collider {
+                        half_w: 12.0,
+                        half_h: 24.0,
+                    },
                 ));
             }
             HazardKind::FallingPlatform => {
@@ -708,15 +1443,70 @@ pub fn spawn_level_layout(
                         }),
                         ..default()
                     },
-                    Collider { half_w: 48.0, half_h: 15.0 },
+                    Collider {
+                        half_w: 48.0,
+                        half_h: 15.0,
+                    },
                 ));
             }
         }
     }
 
+    // Patrolling enemies use the Brackeys slime sheet and also count as hazards.
+    let slime_layout = layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::new(24, 24),
+        4,
+        3,
+        None,
+        None,
+    ));
+    let slime_img: Handle<Image> = match layout.theme {
+        LevelTheme::Boss | LevelTheme::ElectricStar => {
+            asset_server.load("brackeys_platformer_assets/sprites/slime_purple.png")
+        }
+        _ => asset_server.load("brackeys_platformer_assets/sprites/slime_green.png"),
+    };
+
+    for i in 0..layout.monster_n {
+        let m = layout.monsters[i];
+        commands.spawn((
+            GameEntity,
+            Hazard,
+            Monster {
+                start_x: m.start_x,
+                end_x: m.end_x,
+                speed: m.speed,
+                dir: 1.0,
+            },
+            Transform::from_xyz(m.x, m.y, 0.25),
+            Sprite {
+                image: slime_img.clone(),
+                custom_size: Some(Vec2::splat(48.0)),
+                texture_atlas: Some(TextureAtlas {
+                    layout: slime_layout.clone(),
+                    index: 0,
+                }),
+                ..default()
+            },
+            Collider {
+                half_w: 18.0,
+                half_h: 18.0,
+            },
+            AnimationIndices { first: 0, last: 3 },
+            AnimationTimer(Timer::from_seconds(0.12, TimerMode::Repeating)),
+        ));
+    }
+
     // Goal checkpoint from Pixel Adventure.
-    let goal_layout = layouts.add(TextureAtlasLayout::from_grid(UVec2::splat(64), 1, 1, None, None));
-    let goal_img: Handle<Image> = asset_server.load("Pixel Adventure 1/Free/Items/Checkpoints/End/End (Idle).png");
+    let goal_layout = layouts.add(TextureAtlasLayout::from_grid(
+        UVec2::splat(64),
+        1,
+        1,
+        None,
+        None,
+    ));
+    let goal_img: Handle<Image> =
+        asset_server.load("Pixel Adventure 1/Free/Items/Checkpoints/End/End (Idle).png");
     commands.spawn((
         GameEntity,
         crate::components::GoalFlag,
@@ -729,6 +1519,10 @@ pub fn spawn_level_layout(
                 index: 0,
             }),
             ..default()
+        },
+        Collider {
+            half_w: 28.0,
+            half_h: 32.0,
         },
     ));
 }

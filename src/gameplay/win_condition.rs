@@ -3,14 +3,30 @@
 use bevy::prelude::*;
 
 use crate::components::{
-    AnimState, CelebrateTimer, Collider, CurrentLevel, GoalFlag, Grounded, HighScore,
-    LevelTimer, LevelsBeaten, Score, SoundAssets, Velocity, SaveData,
+    AnimState, AnimationIndices, AnimationTimer, CelebrateTimer, CelebrationMotion, Collider,
+    CurrentLevel, GoalFlag, Grounded, HighScore, LevelTimer, LevelsBeaten, PlayerAnimations,
+    SaveData, Score, SoundAssets, Velocity,
 };
+use crate::levels::LEVELS;
 use crate::systems::persistence::write_save;
 
 /// Detect when player reaches the goal flag.
 pub fn goal_detection(
-    mut player_q: Query<(&Transform, &Collider, &mut AnimState, &mut Velocity), With<crate::components::Player>>,
+    mut player_q: Query<
+        (
+            Entity,
+            &Transform,
+            &Collider,
+            &mut AnimState,
+            &mut Velocity,
+            &PlayerAnimations,
+            &mut AnimationIndices,
+            &mut AnimationTimer,
+            &mut Sprite,
+        ),
+        With<crate::components::Player>,
+    >,
+    mut commands: Commands,
     flag_q: Query<(&Transform, &Collider), With<GoalFlag>>,
     mut score: ResMut<Score>,
     level_timer: Res<LevelTimer>,
@@ -22,7 +38,18 @@ pub fn goal_detection(
     if celebrate_timer.0.is_some() {
         return;
     }
-    let Ok((pt, pc, mut anim_state, mut vel)) = player_q.get_single_mut() else {
+    let Ok((
+        player_entity,
+        pt,
+        pc,
+        mut anim_state,
+        mut vel,
+        anims,
+        mut indices,
+        mut timer,
+        mut sprite,
+    )) = player_q.get_single_mut()
+    else {
         return;
     };
     let Ok((ft, fc)) = flag_q.get_single() else {
@@ -36,6 +63,20 @@ pub fn goal_detection(
     ) {
         *anim_state = AnimState::Celebrate;
         vel.0 = Vec2::ZERO;
+        commands.entity(player_entity).insert(CelebrationMotion {
+            base_y: pt.translation.y + 2.0,
+        });
+        let new_first = anims.celebrate_first;
+        let new_last = anims.celebrate_last;
+        let new_secs = anims.celebrate_secs;
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index = new_first;
+        }
+        *indices = AnimationIndices {
+            first: new_first,
+            last: new_last,
+        };
+        *timer = AnimationTimer(Timer::from_seconds(new_secs, TimerMode::Repeating));
         let coins = score.0;
         let time_bonus = ((90.0 - level_timer.0).max(0.0) as u32) * 10;
         let final_score = coins * 150 + time_bonus;
@@ -78,18 +119,16 @@ pub fn keep_in_bounds(
     current_level: Res<CurrentLevel>,
     sounds: Res<SoundAssets>,
     mut commands: Commands,
-    mut query: Query<(&mut Transform, &mut Velocity, &mut Grounded), With<crate::components::Player>>,
+    mut query: Query<
+        (&mut Transform, &mut Velocity, &mut Grounded),
+        With<crate::components::Player>,
+    >,
 ) {
     let Ok((mut t, mut vel, mut grounded)) = query.get_single_mut() else {
         return;
     };
 
-    let right_bound = match current_level.0 {
-        2 => 2350.0,
-        3 => 3050.0,
-        4 => 4000.0,
-        _ => 1950.0,
-    };
+    let right_bound = LEVELS[current_level.0.saturating_sub(1).min(LEVELS.len() - 1)].right_bound;
     t.translation.x = t.translation.x.clamp(-580.0, right_bound);
 
     if t.translation.y < -700.0 {

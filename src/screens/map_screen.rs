@@ -3,12 +3,30 @@
 use bevy::prelude::*;
 
 use crate::components::{
-    MapCursor, MapEntity, MapNode, MapSelection, OrbGlow, LevelsBeaten, PulseOrb,
+    LevelsBeaten, MapCursor, MapEntity, MapNode, MapScrollItem, MapSelection, OrbGlow, PulseOrb,
 };
+use crate::levels::LEVELS;
 
-// Map screen node world-positions (4 levels for now, can extend to 7)
-const NODE_X: [f32; 4] = [-450.0, -150.0, 150.0, 450.0];
+const NODE_START_X: f32 = -450.0;
+const NODE_STEP_X: f32 = 300.0;
 const NODE_Y: f32 = 30.0;
+const MAP_VIEW_HALF_W: f32 = 450.0;
+
+fn node_world_x(index: usize) -> f32 {
+    NODE_START_X + index as f32 * NODE_STEP_X
+}
+
+fn map_scroll_offset(selection: usize) -> f32 {
+    let total = LEVELS.len();
+    let last_x = node_world_x(total.saturating_sub(1));
+    let max_offset = (last_x - MAP_VIEW_HALF_W).max(0.0);
+    let selected_x = node_world_x(selection.saturating_sub(1));
+    selected_x.clamp(0.0, max_offset)
+}
+
+fn display_x(world_x: f32, offset: f32) -> f32 {
+    world_x - offset
+}
 
 /// Spawn the map selection screen.
 pub fn spawn_map_screen(
@@ -19,8 +37,10 @@ pub fn spawn_map_screen(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let lb = levels_beaten.0 as usize;
-    let initial = (lb + 1).min(4);
+    let total_levels = LEVELS.len();
+    let initial = (lb + 1).min(total_levels);
     map_selection.0 = initial;
+    let offset = map_scroll_offset(initial);
 
     // Deep night-sky background
     commands.spawn((
@@ -31,14 +51,41 @@ pub fn spawn_map_screen(
     ));
 
     // Background stars
-    const STARS: [(f32, f32); 26] = [
-        (-580.0, 280.0), (-420.0, 310.0), (-320.0, 260.0), (-200.0, 295.0),
-        (-100.0, 275.0), (50.0, 305.0),  (180.0, 265.0),  (310.0, 285.0),
-        (450.0, 270.0),  (550.0, 295.0), (-560.0, 140.0), (-380.0, 170.0),
-        (-480.0,-150.0), (-280.0,-200.0),(-100.0,-180.0), (80.0, -165.0),
-        (300.0,-195.0),  (500.0,-170.0), (560.0,  130.0), (400.0,  150.0),
-        (-150.0, 190.0), (220.0, 175.0), (-50.0, -290.0), (430.0, -280.0),
-        (-240.0,-300.0), (0.0,   315.0),
+    const STARS: [(f32, f32); 34] = [
+        (-580.0, 280.0),
+        (-420.0, 310.0),
+        (-320.0, 260.0),
+        (-200.0, 295.0),
+        (-100.0, 275.0),
+        (50.0, 305.0),
+        (180.0, 265.0),
+        (310.0, 285.0),
+        (450.0, 270.0),
+        (550.0, 295.0),
+        (-560.0, 140.0),
+        (-380.0, 170.0),
+        (-480.0, -150.0),
+        (-280.0, -200.0),
+        (-100.0, -180.0),
+        (80.0, -165.0),
+        (300.0, -195.0),
+        (500.0, -170.0),
+        (560.0, 130.0),
+        (400.0, 150.0),
+        (-150.0, 190.0),
+        (220.0, 175.0),
+        (-50.0, -290.0),
+        (430.0, -280.0),
+        (-240.0, -300.0),
+        (0.0, 315.0),
+        (-610.0, -40.0),
+        (-510.0, 45.0),
+        (-350.0, -80.0),
+        (-15.0, 95.0),
+        (150.0, -65.0),
+        (335.0, 45.0),
+        (510.0, -55.0),
+        (610.0, 25.0),
     ];
     for (i, (sx, sy)) in STARS.iter().enumerate() {
         let bright = if i % 3 == 0 { 0.95 } else { 0.55 };
@@ -53,13 +100,19 @@ pub fn spawn_map_screen(
 
     // Dotted path connecting all nodes
     let dot_step = 28.0_f32;
-    let mut dot_x = NODE_X[0] + dot_step;
-    while dot_x < NODE_X[3] {
+    let mut dot_x = node_world_x(0) + dot_step;
+    while dot_x < node_world_x(total_levels - 1) {
         commands.spawn((
             MapEntity,
+            MapScrollItem {
+                world_x: dot_x,
+                world_y: NODE_Y,
+            },
             Mesh2d(meshes.add(Circle::new(4.5))),
-            MeshMaterial2d(materials.add(ColorMaterial::from(Color::srgba(0.55, 0.45, 0.25, 0.75)))),
-            Transform::from_xyz(dot_x, NODE_Y, 0.1),
+            MeshMaterial2d(
+                materials.add(ColorMaterial::from(Color::srgba(0.55, 0.45, 0.25, 0.75))),
+            ),
+            Transform::from_xyz(display_x(dot_x, offset), NODE_Y, 0.1),
         ));
         dot_x += dot_step;
     }
@@ -68,7 +121,10 @@ pub fn spawn_map_screen(
     commands.spawn((
         MapEntity,
         Text2d::new("Choose a Level!"),
-        TextFont { font_size: 52.0, ..default() },
+        TextFont {
+            font_size: 52.0,
+            ..default()
+        },
         TextColor(Color::WHITE),
         Transform::from_xyz(0.0, 230.0, 1.0),
     ));
@@ -77,7 +133,10 @@ pub fn spawn_map_screen(
     commands.spawn((
         MapEntity,
         Text2d::new("Left / Right to choose   Enter to play"),
-        TextFont { font_size: 24.0, ..default() },
+        TextFont {
+            font_size: 24.0,
+            ..default()
+        },
         TextColor(Color::srgb(0.5, 0.5, 0.5)),
         Transform::from_xyz(0.0, -230.0, 1.0),
     ));
@@ -88,14 +147,19 @@ pub fn spawn_map_screen(
         MapCursor,
         Mesh2d(meshes.add(Circle::new(54.0))),
         MeshMaterial2d(materials.add(ColorMaterial::from(Color::srgba(1.0, 1.0, 1.0, 0.28)))),
-        Transform::from_xyz(NODE_X[initial - 1], NODE_Y, 0.2),
-        PulseOrb { phase: 0.0, speed: 2.2, pulse_amount: 0.06 },
+        Transform::from_xyz(display_x(node_world_x(initial - 1), offset), NODE_Y, 0.2),
+        PulseOrb {
+            phase: 0.0,
+            speed: 2.2,
+            pulse_amount: 0.06,
+        },
     ));
 
     // Level nodes
-    for i in 0..4usize {
+    for i in 0..total_levels {
         let level_num = i + 1;
-        let x = NODE_X[i];
+        let world_x = node_world_x(i);
+        let x = display_x(world_x, offset);
 
         let (node_color, locked) = if level_num <= lb {
             (Color::srgb(1.0, 0.78, 0.0), false)
@@ -115,10 +179,18 @@ pub fn spawn_map_screen(
             commands.spawn((
                 MapEntity,
                 OrbGlow,
+                MapScrollItem {
+                    world_x,
+                    world_y: NODE_Y,
+                },
                 Mesh2d(meshes.add(Circle::new(58.0))),
                 MeshMaterial2d(materials.add(ColorMaterial::from(glow))),
                 Transform::from_xyz(x, NODE_Y, 0.15),
-                PulseOrb { phase: i as f32 * 1.3, speed: 1.6, pulse_amount: 0.14 },
+                PulseOrb {
+                    phase: i as f32 * 1.3,
+                    speed: 1.6,
+                    pulse_amount: 0.14,
+                },
             ));
         }
 
@@ -126,20 +198,39 @@ pub fn spawn_map_screen(
         let mut ec = commands.spawn((
             MapEntity,
             MapNode,
+            MapScrollItem {
+                world_x,
+                world_y: NODE_Y,
+            },
             Mesh2d(meshes.add(Circle::new(40.0))),
             MeshMaterial2d(materials.add(ColorMaterial::from(node_color))),
             Transform::from_xyz(x, NODE_Y, 0.5),
         ));
         if !locked {
-            ec.insert(PulseOrb { phase: i as f32 * 0.9, speed: 2.0, pulse_amount: 0.05 });
+            ec.insert(PulseOrb {
+                phase: i as f32 * 0.9,
+                speed: 2.0,
+                pulse_amount: 0.05,
+            });
         }
 
         // Level number
         commands.spawn((
             MapEntity,
+            MapScrollItem {
+                world_x,
+                world_y: NODE_Y,
+            },
             Text2d::new(format!("{}", level_num)),
-            TextFont { font_size: 38.0, ..default() },
-            TextColor(if locked { Color::srgb(0.38, 0.38, 0.38) } else { Color::WHITE }),
+            TextFont {
+                font_size: 38.0,
+                ..default()
+            },
+            TextColor(if locked {
+                Color::srgb(0.38, 0.38, 0.38)
+            } else {
+                Color::WHITE
+            }),
             Transform::from_xyz(x, NODE_Y, 1.5),
         ));
 
@@ -153,8 +244,15 @@ pub fn spawn_map_screen(
         };
         commands.spawn((
             MapEntity,
+            MapScrollItem {
+                world_x,
+                world_y: NODE_Y - 62.0,
+            },
             Text2d::new(status),
-            TextFont { font_size: 22.0, ..default() },
+            TextFont {
+                font_size: 22.0,
+                ..default()
+            },
             TextColor(status_color),
             Transform::from_xyz(x, NODE_Y - 62.0, 1.0),
         ));
@@ -162,8 +260,15 @@ pub fn spawn_map_screen(
         // Caption
         commands.spawn((
             MapEntity,
+            MapScrollItem {
+                world_x,
+                world_y: NODE_Y - 85.0,
+            },
             Text2d::new(format!("Level {}", level_num)),
-            TextFont { font_size: 20.0, ..default() },
+            TextFont {
+                font_size: 20.0,
+                ..default()
+            },
             TextColor(Color::srgb(0.6, 0.6, 0.6)),
             Transform::from_xyz(x, NODE_Y - 85.0, 1.0),
         ));
@@ -186,14 +291,11 @@ pub fn map_input(
     }
 
     let lb = levels_beaten.0 as usize;
-    let max_sel = (lb + 1).min(4);
+    let max_sel = (lb + 1).min(LEVELS.len());
 
-    let left =
-        keyboard.just_pressed(KeyCode::ArrowLeft) || keyboard.just_pressed(KeyCode::KeyA);
-    let right =
-        keyboard.just_pressed(KeyCode::ArrowRight) || keyboard.just_pressed(KeyCode::KeyD);
-    let confirm =
-        keyboard.just_pressed(KeyCode::Enter) || keyboard.just_pressed(KeyCode::Space);
+    let left = keyboard.just_pressed(KeyCode::ArrowLeft) || keyboard.just_pressed(KeyCode::KeyA);
+    let right = keyboard.just_pressed(KeyCode::ArrowRight) || keyboard.just_pressed(KeyCode::KeyD);
+    let confirm = keyboard.just_pressed(KeyCode::Enter) || keyboard.just_pressed(KeyCode::Space);
 
     if left && map_selection.0 > 1 {
         map_selection.0 -= 1;
@@ -223,10 +325,27 @@ pub fn animate_map_cursor(
     map_selection: Res<MapSelection>,
     mut cursor_q: Query<&mut Transform, With<MapCursor>>,
 ) {
-    let target_x = NODE_X[map_selection.0 - 1];
+    let target_x = display_x(
+        node_world_x(map_selection.0 - 1),
+        map_scroll_offset(map_selection.0),
+    );
     if let Ok(mut t) = cursor_q.get_single_mut() {
         let dx = target_x - t.translation.x;
         t.translation.x += dx * (time.delta_secs() * 14.0).min(1.0);
+    }
+}
+
+/// Scroll the path and level nodes so the current selection stays readable.
+pub fn animate_map_scroll(
+    time: Res<Time>,
+    map_selection: Res<MapSelection>,
+    mut q: Query<(&MapScrollItem, &mut Transform), Without<MapCursor>>,
+) {
+    let offset = map_scroll_offset(map_selection.0);
+    for (item, mut t) in &mut q {
+        let target_x = display_x(item.world_x, offset);
+        t.translation.x += (target_x - t.translation.x) * (time.delta_secs() * 12.0).min(1.0);
+        t.translation.y = item.world_y;
     }
 }
 
